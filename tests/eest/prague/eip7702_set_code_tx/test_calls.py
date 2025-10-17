@@ -13,7 +13,7 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 pytestmark = pytest.mark.valid_from("Prague")
 REFERENCE_SPEC_GIT_PATH = "EIPS/eip-7702.md"
@@ -86,7 +86,7 @@ def test_delegate_call_targets(
     target_address: Address,
     delegate: bool,
     call_from_initcode: bool,
-):
+) -> None:
     """
     Test contracts doing delegatecall to various targets resolved via 7702
     delegation.

@@ -5,9 +5,9 @@ from typing import List
 import pytest
 
 from ethereum_test_tools import Account, Alloc, Environment, StateTestFiller, Transaction
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
 from ethereum_test_types.eof.v1.constants import MAX_CODE_SECTIONS, MAX_RETURN_STACK_HEIGHT
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 
@@ -303,7 +303,7 @@ def test_eof_functions_contract_call_succeed(
     state_test: StateTestFiller,
     pre: Alloc,
     container: Container,
-):
+) -> None:
     """Test simple contracts that are simply expected to succeed on call."""
     env = Environment()
 
@@ -336,7 +336,7 @@ def test_eof_functions_contract_call_fail(
     state_test: StateTestFiller,
     pre: Alloc,
     container: Container,
-):
+) -> None:
     """Test simple contracts that are simply expected to fail on call."""
     env = Environment()
 
@@ -367,7 +367,7 @@ def test_eof_functions_contract_call_fail(
 def test_eof_functions_contract_call_within_deep_nested(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """
     Test performing a call within a nested callf and verify correct behavior of
     return stack in calling contract.
@@ -419,7 +419,7 @@ def test_eof_functions_contract_call_within_deep_nested(
         sender=sender,
     )
     post = {
-        callee_address: Account(storage={i: 1 for i in range(MAX_CODE_SECTIONS)}),
+        callee_address: Account(storage=dict.fromkeys(range(MAX_CODE_SECTIONS), 1)),
         nested_callee_address: Account(
             storage={
                 0: 1,

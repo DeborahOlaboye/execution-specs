@@ -4,8 +4,8 @@ import pytest
 
 from ethereum_test_specs import EOFStateTestFiller
 from ethereum_test_tools import Account, Alloc, Environment, StateTestFiller, Transaction
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 
@@ -17,7 +17,7 @@ pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
 @pytest.mark.parametrize("index", [0, 1, 31, 32, 33, 63, 64])
 @pytest.mark.parametrize("suffix_len", [0, 1, 31, 32, 24000])
-def test_dataloadn(eof_state_test: EOFStateTestFiller, index: int, suffix_len: int):
+def test_dataloadn(eof_state_test: EOFStateTestFiller, index: int, suffix_len: int) -> None:
     """Basic tests for DATALOADN execution."""
     sentinel = 0x8000000000000000000000000000000000000000000000000000000000000001
     eof_state_test(
@@ -35,8 +35,11 @@ def test_dataloadn(eof_state_test: EOFStateTestFiller, index: int, suffix_len: i
     )
 
 
-def create_data_test(offset: int, datasize: int):
-    """Generate data load operators test cases based on load offset and data section size."""
+def create_data_test(offset: int, datasize: int) -> tuple[Container, dict[int, int]]:
+    """
+    Generate data load operators test cases based on load offset and data
+    section size.
+    """
     data = b"".join(i.to_bytes(length=2, byteorder="big") for i in range(1, datasize // 2 + 1))
     assert len(data) == datasize
     overhang = min(32, offset + 32 - datasize)
@@ -79,7 +82,13 @@ def create_data_test(offset: int, datasize: int):
                 Section.Data(data),
             ],
         ),
-        {0: 1, 1: answer, 2: answer, 3: datasize, 4: answer},
+        {
+            0: 1,
+            1: int.from_bytes(answer, byteorder="big"),
+            2: int.from_bytes(answer, byteorder="big"),
+            3: datasize,
+            4: int.from_bytes(answer, byteorder="big"),
+        },
     )
 
 
@@ -111,7 +120,7 @@ def test_data_section_succeed(
     pre: Alloc,
     offset: int,
     datasize: int,
-):
+) -> None:
     """Test simple contracts that simply expect data section to succeed."""
     env = Environment()
 

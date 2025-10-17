@@ -1,11 +1,10 @@
 """
-abstract: Tests [EIP-7251: Increase the MAX_EFFECTIVE_BALANCE](https://eips.ethereum.org/EIPS/eip-7251).
-    Test system contract deployment for [EIP-7251: Increase the MAX_EFFECTIVE_BALANCE](https://eips.ethereum.org/EIPS/eip-7251).
-"""  # noqa: E501
+Tests [EIP-7251: Increase the MAX_EFFECTIVE_BALANCE](https://eips.ethereum.org/EIPS/eip-7251).
+"""
 
 from os.path import realpath
 from pathlib import Path
-from typing import Generator
+from typing import Any, Generator
 
 import pytest
 
@@ -40,7 +39,7 @@ def test_system_contract_deployment(
     *,
     fork: Fork,
     pre: Alloc,
-    **kwargs,
+    **kwargs: Any,
 ) -> Generator[Block, None, None]:
     """Verify calling the consolidation system contract after deployment."""
     sender = pre.fund_eoa()

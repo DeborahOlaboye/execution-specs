@@ -1,8 +1,8 @@
 """
-abstract: Tests [EIP-5656: MCOPY - Memory copying instruction](https://eips.ethereum.org/EIPS/eip-5656)
-    Test memory copy under different call contexts [EIP-5656: MCOPY - Memory copying instruction](https://eips.ethereum.org/EIPS/eip-5656).
+Test memory copy under different call contexts.
 
-"""  # noqa: E501
+Tests for [EIP-5656: MCOPY - Memory copying instruction](https://eips.ethereum.org/EIPS/eip-5656).
+"""
 
 from itertools import cycle, islice
 from typing import Mapping
@@ -39,8 +39,8 @@ def callee_bytecode(
     call_opcode: Op,
 ) -> Bytecode:
     """
-    Callee simply performs mcopy operations that should not have any effect on the
-    caller context.
+    Callee simply performs mcopy operations that should not have any effect on
+    the caller context.
     """
     bytecode = Bytecode()
 
@@ -76,7 +76,8 @@ def initial_memory(
     ret = bytes(list(islice(cycle(range(0x01, 0x100)), initial_memory_length)))
 
     if call_opcode in [Op.CREATE, Op.CREATE2]:
-        # We also need to put the callee_bytecode as initcode in memory for create operations
+        # We also need to put the callee_bytecode as initcode in memory for
+        # create operations
         ret = bytes(callee_bytecode) + ret[len(callee_bytecode) :]
 
     assert len(ret) == initial_memory_length
@@ -97,8 +98,8 @@ def caller_bytecode(
     caller_storage: Storage,
 ) -> Bytecode:
     """
-    Prepare bytecode and storage for the test, based on the starting memory and the final
-    memory that resulted from the copy.
+    Prepare bytecode and storage for the test, based on the starting memory and
+    the final memory that resulted from the copy.
     """
     bytecode = Bytecode()
 
@@ -116,8 +117,8 @@ def caller_bytecode(
     bytecode += Op.SSTORE(100_000, Op.MSIZE())
     caller_storage[100_000] = ceiling_division(len(initial_memory), 0x20) * 0x20
 
-    # Store all memory in the initial range to verify the MCOPY in the subcall did not affect
-    # this level's memory
+    # Store all memory in the initial range to verify the MCOPY in the subcall
+    # did not affect this level's memory
     for w in range(0, len(initial_memory) // 0x20):
         bytecode += Op.SSTORE(w, Op.MLOAD(w * 0x20))
         caller_storage[w] = initial_memory[w * 0x20 : w * 0x20 + 0x20]
@@ -126,12 +127,12 @@ def caller_bytecode(
 
 
 @pytest.fixture
-def caller_address(pre: Alloc, caller_bytecode) -> Address:  # noqa: D103
+def caller_address(pre: Alloc, caller_bytecode: Bytecode) -> Address:  # noqa: D103
     return pre.deploy_contract(caller_bytecode)
 
 
 @pytest.fixture
-def callee_address(pre: Alloc, callee_bytecode) -> Address:  # noqa: D103
+def callee_address(pre: Alloc, callee_bytecode: Bytecode) -> Address:  # noqa: D103
     return pre.deploy_contract(callee_bytecode)
 
 
@@ -169,10 +170,10 @@ def test_no_memory_corruption_on_upper_call_stack_levels(
     pre: Alloc,
     post: Mapping[str, Account],
     tx: Transaction,
-):
+) -> None:
     """
-    Perform a subcall with any of the following opcodes, which uses MCOPY during its execution,
-    and verify that the caller's memory is unaffected.
+    Perform a subcall with any of the following opcodes, which uses MCOPY
+    during its execution, and verify that the caller's memory is unaffected.
     """
     state_test(
         env=Environment(),
@@ -195,10 +196,10 @@ def test_no_memory_corruption_on_upper_create_stack_levels(
     pre: Alloc,
     post: Mapping[str, Account],
     tx: Transaction,
-):
+) -> None:
     """
-    Perform a subcall with any of the following opcodes, which uses MCOPY during its execution,
-    and verify that the caller's memory is unaffected:
+    Perform a subcall with any of the following opcodes, which uses MCOPY
+    during its execution, and verify that the caller's memory is unaffected:
       - `CREATE`
       - `CREATE2`.
 

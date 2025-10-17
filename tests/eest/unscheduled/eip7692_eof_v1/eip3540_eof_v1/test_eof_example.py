@@ -14,7 +14,7 @@ REFERENCE_SPEC_VERSION = "8dcb0a8c1c0102c87224308028632cc986a61183"
 pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
 
-def test_eof_example(eof_test: EOFTestFiller):
+def test_eof_example(eof_test: EOFTestFiller) -> None:
     """Example of python EOF classes."""
     # Lets construct an EOF container code
     eof_code = Container(
@@ -23,13 +23,16 @@ def test_eof_example(eof_test: EOFTestFiller):
             # TYPES section is constructed automatically based on CODE
             # CODE section
             Section.Code(
-                code=Op.CALLF[1](Op.PUSH0) + Op.STOP,  # bytecode to be deployed in the body
+                code=Op.CALLF[1](Op.PUSH0) + Op.STOP,  # bytecode to be
+                # deployed in the body
                 # Code: call section 1 with a single zero as input, then stop.
-                max_stack_increase=1,  # define code header (in body) stack size
+                max_stack_increase=1,  # define code header (in body) stack
+                # size
             ),
             # There can be multiple code sections
             Section.Code(
-                # Remove input and call section 2 with no inputs, then remove output and return
+                # Remove input and call section 2 with no inputs, then remove
+                # output and return
                 code=Op.POP + Op.CALLF[2]() + Op.POP + Op.RETF,
                 code_inputs=1,
                 code_outputs=0,
@@ -62,47 +65,58 @@ def test_eof_example(eof_test: EOFTestFiller):
     )
 
 
-def test_eof_example_custom_fields(eof_test: EOFTestFiller):
+def test_eof_example_custom_fields(eof_test: EOFTestFiller) -> None:
     """Example of python EOF container class tuning."""
-    # if you need to overwrite certain structure bytes, you can use customization
-    # this is useful for unit testing the eof structure format, you can reorganize sections
-    # and overwrite the header bytes for testing purposes
-    # most of the combinations are covered by the unit tests
+    # if you need to overwrite certain structure bytes, you can use
+    # customization. this is useful for unit testing the eof structure format,
+    # you can reorganize sections and overwrite the header bytes for testing
+    # purposes. most of the combinations are covered by the unit tests
 
     # This features are subject for development and will change in the future
 
     eof_code = Container(
         name="valid_container_example_2",
-        magic=b"\xef\x00",  # magic can be overwritten for test purposes, (default is 0xEF00)
-        version=b"\x01",  # version can be overwritten for testing purposes (default is 0x01)
-        header_terminator=b"\x00",  # terminator byte can be overwritten (default is 0x00)
-        extra=b"",  # extra bytes to be trailed after the container body bytes (default is None)
+        magic=b"\xef\x00",  # magic can be overwritten for test purposes,
+        # (default is 0xEF00)
+        version=b"\x01",  # version can be overwritten for testing purposes
+        # (default is 0x01)
+        header_terminator=b"\x00",  # terminator byte can be overwritten
+        # (default is 0x00)
+        extra=b"",  # extra bytes to be trailed after the container body bytes
+        # (default is None)
         sections=[
             # TYPES section is constructed automatically based on CODE
             # CODE section
             Section.Code(
-                code=Op.PUSH1(2)
-                + Op.STOP,  # this is the actual bytecode to be deployed in the body
+                code=Op.PUSH1(2) + Op.STOP,  # this is the actual bytecode to be deployed in the
+                # body
                 max_stack_height=1,  # define code header (in body) stack size
             ),
             # DATA section
             Section.Data(
                 data="0xef",
-                # custom_size overrides the size bytes, so you can put only 1 byte into data
-                # but still make the header size of 2 to produce invalid section
+                # custom_size overrides the size bytes, so you can put only 1
+                # byte into data but still make the header size of 2 to produce
+                # invalid section
+                #
                 # if custom_size != len(data), the section will be invalid
                 custom_size=1,
             ),
         ],
         # auto generate types section based on provided code sections
-        # AutoSection.ONLY_BODY - means the section will be generated only for the body bytes
-        # AutoSection.ONLY_BODY - means the section will be generated only for the header bytes
+        # AutoSection.ONLY_BODY - means the section will be generated only for
+        #                         the body bytes
+        #
+        # AutoSection.ONLY_BODY - means the section will be generated only for
+        #                         the header bytes
         auto_type_section=AutoSection.AUTO,
         # auto generate default data section (0x empty), by default is True
         auto_data_section=True,
         # auto sort section by order 01 02 03 04
-        # AutoSection.ONLY_BODY - means the sorting will be done only for the body bytes
-        # AutoSection.ONLY_BODY - means the section will be done only for the header bytes
+        # AutoSection.ONLY_BODY - means the sorting will be done only for the
+        #                         body bytes
+        # AutoSection.ONLY_BODY - means the section will be done only for the
+        #                         header bytes
         auto_sort_sections=AutoSection.AUTO,
     )
 
@@ -125,7 +139,7 @@ def test_eof_example_parameters(
     data_section_bytes: bytes,
     code_section_code: Bytecode,
     exception: EOFException,
-):
+) -> None:
     """Example of EOF example parameters."""
     eof_code = Container(
         name="parametrized_eof_example",

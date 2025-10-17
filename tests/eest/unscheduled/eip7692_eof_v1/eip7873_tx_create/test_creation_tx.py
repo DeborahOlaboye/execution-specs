@@ -10,7 +10,7 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.code.generators import Initcode as LegacyInitcode
+from ethereum_test_tools import Initcode as LegacyInitcode
 from ethereum_test_types import TransactionReceipt
 from ethereum_test_types.eof.v1 import Container
 
@@ -44,7 +44,7 @@ def test_legacy_create_tx_legacy_initcode_eof_bytecode(
     pre: Alloc,
     tx_type: int,
     deploy_code: Bytes | Container,
-):
+) -> None:
     """
     Test that a legacy contract creation tx cannot create EOF code.
 
@@ -97,11 +97,11 @@ def test_legacy_create_tx_prefix_initcode(
     pre: Alloc,
     tx_type: int,
     initcode: Bytes,
-):
+) -> None:
     """
-    Test that a legacy contract creation tx behaves as it did before EIP-7873 for
-    initcode stating with `EF`.
-    The transaction should be valid but fail on executing of the first byte `EF`.
+    Test that a legacy contract creation tx behaves as it did before EIP-7873
+    for initcode stating with `EF`. The transaction should be valid but fail on
+    executing of the first byte `EF`.
     """
     env = Environment()
     sender = pre.fund_eoa()

@@ -1,8 +1,7 @@
 """
-abstract:  [EIP-7918: Blob base fee bounded by execution cost](https://eips.ethereum.org/EIPS/eip-7918)
-    Test the blob base fee reserve price mechanism for [EIP-7918: Blob base fee bounded by execution cost](https://eips.ethereum.org/EIPS/eip-7918).
-
-"""  # noqa: E501
+ [EIP-7918: Blob base fee bounded by execution
+cost](https://eips.ethereum.org/EIPS/eip-7918).
+"""
 
 import pytest
 
@@ -27,7 +26,7 @@ def test_blob_base_fee_with_bpo_transition(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
     env: Environment,
-):
+) -> None:
     """Test BPO1 transition with EIP-7918 reserve mechanism."""
     blockchain_test(
         genesis_environment=env,

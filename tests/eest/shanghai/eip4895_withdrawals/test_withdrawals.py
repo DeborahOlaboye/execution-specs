@@ -1,7 +1,5 @@
 """
-abstract: Tests [EIP-4895: Beacon chain withdrawals](https://eips.ethereum.org/EIPS/eip-4895)
-    Test cases for [EIP-4895: Beacon chain push withdrawals as
-    operations](https://eips.ethereum.org/EIPS/eip-4895).
+Tests for [EIP-4895: Beacon chain withdrawals](https://eips.ethereum.org/EIPS/eip-4895).
 """
 
 from enum import Enum, unique
@@ -23,7 +21,7 @@ from ethereum_test_tools import (
     TransactionException,
     Withdrawal,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 from .spec import ref_spec_4895
 
@@ -50,11 +48,11 @@ class TestUseValueInTx:
     """
     Test that the value from a withdrawal can be used in a transaction.
 
-    1. `tx_in_withdrawals_block`: Test that the withdrawal value can not be used by a transaction
-        in the same block as the withdrawal.
+    1. `tx_in_withdrawals_block`: Test that the withdrawal value can not be
+    used by a transaction in the same block as the withdrawal.
 
-    2. `tx_after_withdrawals_block`: Test that the withdrawal value can be used by a transaction
-        in the subsequent block.
+    2. `tx_after_withdrawals_block`: Test that the withdrawal value can be used
+    by a transaction in the subsequent block.
     """
 
     @pytest.fixture
@@ -68,7 +66,7 @@ class TestUseValueInTx:
         return pre.fund_eoa(0)
 
     @pytest.fixture
-    def tx(self, sender: EOA, recipient: EOA):  # noqa: D102
+    def tx(self, sender: EOA, recipient: EOA) -> Transaction:  # noqa: D102
         # Transaction sent from the `sender`, which has 1 wei balance at start
         return Transaction(
             gas_price=ONE_GWEI,
@@ -78,7 +76,7 @@ class TestUseValueInTx:
         )
 
     @pytest.fixture
-    def withdrawal(self, tx: Transaction, sender: EOA):  # noqa: D102
+    def withdrawal(self, tx: Transaction, sender: EOA) -> Withdrawal:  # noqa: D102
         return Withdrawal(
             index=0,
             validator_index=0,
@@ -87,7 +85,7 @@ class TestUseValueInTx:
         )
 
     @pytest.fixture
-    def blocks(self, tx: Transaction, withdrawal: Withdrawal, test_case):  # noqa: D102
+    def blocks(self, tx: Transaction, withdrawal: Withdrawal, test_case: str) -> List[Block]:  # noqa: D102
         if test_case == "tx_in_withdrawals_block":
             return [
                 Block(
@@ -127,7 +125,7 @@ class TestUseValueInTx:
         blockchain_test: BlockchainTestFiller,
         post: dict,
         blocks: List[Block],
-    ):
+    ) -> None:
         """Test sending withdrawal value in a transaction."""
         blockchain_test(pre=pre, post=post, blocks=blocks)
 
@@ -135,7 +133,7 @@ class TestUseValueInTx:
 def test_use_value_in_contract(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Test sending value from contract that has not received a withdrawal."""
     sender = pre.fund_eoa()
     recipient = pre.fund_eoa(1)
@@ -187,10 +185,9 @@ def test_use_value_in_contract(
     blockchain_test(pre=pre, post=post, blocks=blocks)
 
 
-def test_balance_within_block(blockchain_test: BlockchainTestFiller, pre: Alloc):
+def test_balance_within_block(blockchain_test: BlockchainTestFiller, pre: Alloc) -> None:
     """
-    Test Withdrawal balance increase within the same block,
-    inside contract call.
+    Test withdrawal balance increase within the same block in a contract call.
     """
     save_balance_on_block_number = Op.SSTORE(
         Op.NUMBER,
@@ -259,7 +256,7 @@ class TestMultipleWithdrawalsSameAddress:
         return addresses + [Address(2**160 - 1)]
 
     @pytest.fixture
-    def blocks(self, addresses: Address, test_case: str):  # noqa: D102
+    def blocks(self, addresses: Address, test_case: str) -> List[Block]:  # noqa: D102
         if test_case == "single_block":
             # Many repeating withdrawals of the same accounts in the same
             # block.
@@ -302,10 +299,9 @@ class TestMultipleWithdrawalsSameAddress:
         pre: Alloc,
         addresses: List[Address],
         blocks: List[Block],
-    ):
+    ) -> None:
         """
-        Test Withdrawals can be done to the same address multiple times in
-        the same block.
+        Test withdrawals to the same address multiple times in the same block.
         """
         # Expected post is the same for both test cases.
         post = {}
@@ -321,10 +317,9 @@ class TestMultipleWithdrawalsSameAddress:
 def test_many_withdrawals(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
+) -> None:
     """
-    Test Withdrawals with a count of N withdrawals in a single block where
-    N is a high number not expected to be seen in mainnet.
+    Test an unexpected high number of withdrawals in a single block.
     """
     n = 400
     withdrawals = []
@@ -359,11 +354,12 @@ def test_self_destructing_account(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
     fork: Fork,
-):
+) -> None:
     """
     Test withdrawals can be done to self-destructed accounts.
-    Account `0x100` self-destructs and sends all its balance to `0x200`.
-    Then, a withdrawal is received at `0x100` with 99 wei.
+
+    Account `0x100` self-destructs and sends all its balance to `0x200`. Then,
+    a withdrawal is received at `0x100` with 99 wei.
     """
     self_destruct_code = Op.SELFDESTRUCT(Op.CALLDATALOAD(0))
     sender = pre.fund_eoa()
@@ -417,9 +413,8 @@ def test_newly_created_contract(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
     include_value_in_tx: bool,
-    request,
-):
-    """Test Withdrawing to a newly created contract."""
+) -> None:
+    """Test withdrawing to a newly created contract."""
     sender = pre.fund_eoa()
     initcode = Op.RETURN(0, 1)
     tx = Transaction(
@@ -462,8 +457,8 @@ def test_newly_created_contract(
 def test_no_evm_execution(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test Withdrawals don't trigger EVM execution."""
+) -> None:
+    """Test withdrawals don't trigger EVM execution."""
     sender = pre.fund_eoa()
     contracts = [pre.deploy_contract(Op.SSTORE(Op.NUMBER, 1)) for _ in range(4)]
     blocks = [
@@ -552,18 +547,21 @@ def test_zero_amount(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
     test_case: ZeroAmountTestCases,
-):
+) -> None:
     """
-    Test withdrawals with zero amount for the following cases, all withdrawals
-    are included in one block.
+    Test withdrawal scenarios with a zero amount in a single block.
+
+    All the withdrawals in the following scenarios are included in one block.
 
     1. Two withdrawals of zero amount to two different addresses; one to an
-       untouched account, one to an account with a balance.
+        untouched account, one to an account with a balance.
+
     2. As 1., but with an additional withdrawal with positive value.
+
     3. As 2., but with an additional withdrawal containing the maximum value
        possible.
-    4. As 3., but with order of withdrawals in the block reversed.
 
+    4. As 3., but with order of withdrawals in the block reversed.
     """
     empty_accounts = [pre.fund_eoa(0) for _ in range(3)]
     zero_balance_contract = pre.deploy_contract(Op.STOP)
@@ -645,19 +643,21 @@ def test_zero_amount(
         pre=pre,
         # TODO: Fix in BlockchainTest? post: Mapping[str, Account | object]
         # to allow for Account.NONEXISTENT
-        post=post,  # type: ignore
+        post=post,
         blocks=[Block(withdrawals=withdrawals)],
         tag=test_case.value,
     )
 
 
+@pytest.mark.xdist_group(name="bigmem")
 def test_large_amount(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
+) -> None:
     """
-    Test Withdrawals that have a large gwei amount, so that (gwei * 1e9)
-    could overflow uint64 but not uint256.
+    Test withdrawals that have a large gwei amount.
+
+    Test such that that (gwei * 1e9) could overflow uint64 but not uint256.
     """
     withdrawals: List[Withdrawal] = []
     amounts: List[int] = [
@@ -690,15 +690,17 @@ def test_large_amount(
     blockchain_test(pre=pre, post=post, blocks=blocks)
 
 
+@pytest.mark.xdist_group(name="bigmem")
 @pytest.mark.parametrize("amount", [0, 1])
 @pytest.mark.with_all_precompiles
+@pytest.mark.slow()
 def test_withdrawing_to_precompiles(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
     precompile: int,
     amount: int,
     t8n: TransitionTool,
-):
+) -> None:
     """Test withdrawing to all precompiles for a given fork."""
     sender = pre.fund_eoa()
     post: Dict = {}

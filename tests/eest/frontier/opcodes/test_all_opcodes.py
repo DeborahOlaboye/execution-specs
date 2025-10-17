@@ -1,6 +1,6 @@
 """
-Call every possible opcode and test that the subcall is successful
-if the opcode is supported by the fork supports and fails otherwise.
+Call every possible opcode and test that the subcall is successful if the
+opcode is supported by the fork supports and fails otherwise.
 """
 
 from typing import Dict
@@ -17,8 +17,8 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcode, UndefinedOpcodes
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcode, UndefinedOpcodes
+from ethereum_test_vm import Opcodes as Op
 
 REFERENCE_SPEC_GIT_PATH = "N/A"
 REFERENCE_SPEC_VERSION = "N/A"
@@ -54,11 +54,11 @@ def prepare_suffix(opcode: Opcode) -> Bytecode:
     pr=["https://github.com/ethereum/execution-spec-tests/pull/748"],
 )
 @pytest.mark.valid_from("Frontier")
-def test_all_opcodes(state_test: StateTestFiller, pre: Alloc, fork: Fork):
+def test_all_opcodes(state_test: StateTestFiller, pre: Alloc, fork: Fork) -> None:
     """
-    Test each possible opcode on the fork with a single contract that
-    calls each opcode in succession. Check that each subcall passes
-    if the opcode is supported and fails otherwise.
+    Test each possible opcode on the fork with a single contract that calls
+    each opcode in succession. Check that each subcall passes if the opcode is
+    supported and fails otherwise.
     """
     code_worked = 1000
 
@@ -75,8 +75,8 @@ def test_all_opcodes(state_test: StateTestFiller, pre: Alloc, fork: Fork):
         code=sum(
             Op.SSTORE(
                 Op.PUSH1(opcode.int()),
-                # Limit gas to limit the gas consumed by the exceptional aborts in each
-                # subcall that uses an undefined opcode.
+                # Limit gas to limit the gas consumed by the exceptional aborts
+                # in each subcall that uses an undefined opcode.
                 Op.CALL(35_000, opcode_address, 0, 0, 0, 0, 0),
             )
             for opcode, opcode_address in code_contract.items()
@@ -110,7 +110,7 @@ def test_all_opcodes(state_test: StateTestFiller, pre: Alloc, fork: Fork):
 
 
 @pytest.mark.valid_from("Cancun")
-def test_cover_revert(state_test: StateTestFiller, pre: Alloc):
+def test_cover_revert(state_test: StateTestFiller, pre: Alloc) -> None:
     """Cover state revert from original tests for the coverage script."""
     tx = Transaction(
         sender=pre.fund_eoa(),

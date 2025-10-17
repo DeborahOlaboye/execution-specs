@@ -1,11 +1,11 @@
 """
-abstract: Tests [EIP-7939: Count leading zeros (CLZ) opcode](https://eips.ethereum.org/EIPS/eip-7939)
-    Test cases for [EIP-7939: Count leading zeros (CLZ) opcode](https://eips.ethereum.org/EIPS/eip-7939).
+Tests [EIP-7939: Count leading zeros (CLZ)](https://eips.ethereum.org/EIPS/eip-7939).
 """
 
 import pytest
 
 from ethereum_test_base_types import Storage
+from ethereum_test_checklists import EIPChecklist
 from ethereum_test_forks import Fork
 from ethereum_test_tools import (
     Account,
@@ -20,7 +20,7 @@ from ethereum_test_tools import (
     Transaction,
     compute_create_address,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 from ...prague.eip7702_set_code_tx.spec import Spec as Spec7702
 from .spec import Spec, ref_spec_7939
@@ -29,7 +29,7 @@ REFERENCE_SPEC_GIT_PATH = ref_spec_7939.git_path
 REFERENCE_SPEC_VERSION = ref_spec_7939.version
 
 
-def clz_parameters():
+def clz_parameters() -> list:
     """Generate all test case parameters."""
     test_cases = []
 
@@ -91,12 +91,13 @@ def test_clz_opcode_scenarios(
     test_id: str,
     value: int,
     expected_clz: int,
-):
+) -> None:
     """
     Test CLZ opcode functionality.
 
     Cases:
-    - Format 0xb000...111: leading zeros followed by ones (2**256 - 1 >> bits)
+    - Format 0xb000...111: leading zeros followed by ones
+       (2**256 - 1 >> bits)
     - Format 0xb010...000: single bit set at position (1 << bits)
 
     Test coverage:
@@ -121,7 +122,7 @@ def test_clz_opcode_scenarios(
 
 
 @pytest.mark.valid_from("Osaka")
-def test_clz_gas_cost(state_test: StateTestFiller, pre: Alloc, fork: Fork):
+def test_clz_gas_cost(state_test: StateTestFiller, pre: Alloc, fork: Fork) -> None:
     """Test CLZ opcode gas cost."""
     contract_address = pre.deploy_contract(
         Op.SSTORE(
@@ -144,6 +145,9 @@ def test_clz_gas_cost(state_test: StateTestFiller, pre: Alloc, fork: Fork):
     state_test(pre=pre, post=post, tx=tx)
 
 
+@EIPChecklist.Opcode.Test.GasUsage.Normal()
+@EIPChecklist.Opcode.Test.GasUsage.OutOfGasExecution()
+@EIPChecklist.Opcode.Test.GasUsage.ExtraGas()
 @pytest.mark.valid_from("Osaka")
 @pytest.mark.parametrize("bits", [0, 64, 128, 255])
 @pytest.mark.parametrize("gas_cost_delta", [-2, -1, 0, 1, 2])
@@ -153,7 +157,7 @@ def test_clz_gas_cost_boundary(
     fork: Fork,
     bits: int,
     gas_cost_delta: int,
-):
+) -> None:
     """Test CLZ opcode gas cost boundary."""
     code = Op.PUSH32(1 << bits) + Op.CLZ
 
@@ -178,9 +182,13 @@ def test_clz_gas_cost_boundary(
     state_test(pre=pre, post=post, tx=tx)
 
 
+@EIPChecklist.Opcode.Test.StackUnderflow()
+@EIPChecklist.Opcode.Test.StackComplexOperations.StackHeights.Zero()
 @pytest.mark.valid_from("Osaka")
-def test_clz_stack_underflow(state_test: StateTestFiller, pre: Alloc):
-    """Test CLZ opcode with empty stack (should revert due to stack underflow)."""
+def test_clz_stack_underflow(state_test: StateTestFiller, pre: Alloc) -> None:
+    """
+    Test CLZ opcode with empty stack (should revert due to stack underflow).
+    """
     sender = pre.fund_eoa()
     callee_address = pre.deploy_contract(
         code=Op.CLZ + Op.STOP,  # No stack items, should underflow
@@ -202,8 +210,10 @@ def test_clz_stack_underflow(state_test: StateTestFiller, pre: Alloc):
     state_test(pre=pre, post=post, tx=tx)
 
 
+@EIPChecklist.Opcode.Test.StackComplexOperations.StackHeights.Odd()
+@EIPChecklist.Opcode.Test.StackComplexOperations.StackHeights.Even()
 @pytest.mark.valid_from("Osaka")
-def test_clz_stack_not_overflow(state_test: StateTestFiller, pre: Alloc, fork: Fork):
+def test_clz_stack_not_overflow(state_test: StateTestFiller, pre: Alloc, fork: Fork) -> None:
     """Test CLZ opcode never causes stack overflow."""
     max_stack_items = fork.max_stack_height()
 
@@ -229,7 +239,7 @@ def test_clz_stack_not_overflow(state_test: StateTestFiller, pre: Alloc, fork: F
 
 
 @pytest.mark.valid_from("Osaka")
-def test_clz_push_operation_same_value(state_test: StateTestFiller, pre: Alloc):
+def test_clz_push_operation_same_value(state_test: StateTestFiller, pre: Alloc) -> None:
     """Test CLZ opcode returns the same value via different push operations."""
     storage = {}
 
@@ -260,8 +270,10 @@ def test_clz_push_operation_same_value(state_test: StateTestFiller, pre: Alloc):
     state_test(pre=pre, post=post, tx=tx)
 
 
+@EIPChecklist.Opcode.Test.ForkTransition.Invalid()
+@EIPChecklist.Opcode.Test.ForkTransition.At()
 @pytest.mark.valid_at_transition_to("Osaka", subsequent_forks=True)
-def test_clz_fork_transition(blockchain_test: BlockchainTestFiller, pre: Alloc):
+def test_clz_fork_transition(blockchain_test: BlockchainTestFiller, pre: Alloc) -> None:
     """Test CLZ opcode behavior at fork transition."""
     sender = pre.fund_eoa()
     callee_address = pre.deploy_contract(
@@ -320,9 +332,12 @@ def test_clz_fork_transition(blockchain_test: BlockchainTestFiller, pre: Alloc):
             ),
             callee_address: Account(
                 storage={
-                    14_999: "0xdeadbeef",  # CLZ not valid before fork, storage unchanged
-                    15_000: 155,  # CLZ valid on transition block, CLZ(1 << 100) = 155
-                    15_001: 155,  # CLZ continues to be valid after transition
+                    # CLZ not valid before fork, storage unchanged
+                    14_999: "0xdeadbeef",
+                    # CLZ valid on transition block, CLZ(1 << 100) = 155
+                    15_000: 155,
+                    # CLZ continues to be valid after transition
+                    15_001: 155,
                 }
             ),
         },
@@ -341,7 +356,7 @@ def test_clz_jump_operation(
     valid_jump: bool,
     jumpi_condition: bool,
     bits: int,
-):
+) -> None:
     """Test CLZ opcode with valid and invalid jump."""
     if opcode == Op.JUMP and not jumpi_condition:
         pytest.skip("Duplicate case for JUMP.")
@@ -386,11 +401,12 @@ def test_clz_jump_operation(
 auth_account_start_balance = 0
 
 
+@EIPChecklist.Opcode.Test.ExecutionContext.SetCode()
 @pytest.mark.valid_from("Osaka")
 def test_clz_from_set_code(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Test the address opcode in a set-code transaction."""
     storage = Storage()
     auth_signer = pre.fund_eoa(auth_account_start_balance)
@@ -435,7 +451,9 @@ def test_clz_from_set_code(
 @pytest.mark.valid_from("Osaka")
 @pytest.mark.parametrize("bits", [0, 64, 255])
 @pytest.mark.parametrize("opcode", [Op.CODECOPY, Op.EXTCODECOPY])
-def test_clz_code_copy_operation(state_test: StateTestFiller, pre: Alloc, bits: int, opcode: Op):
+def test_clz_code_copy_operation(
+    state_test: StateTestFiller, pre: Alloc, bits: int, opcode: Op
+) -> None:
     """Test CLZ opcode with code copy operation."""
     storage = Storage()
 
@@ -457,7 +475,8 @@ def test_clz_code_copy_operation(state_test: StateTestFiller, pre: Alloc, bits: 
                     address=target_address, dest_offset=0, offset=clz_code_offset, size=1
                 )
             )
-            + Op.SSTORE(storage.store_next(mload_value), Op.MLOAD(0))  # Store loaded CLZ byte
+            # Store loaded CLZ byte
+            + Op.SSTORE(storage.store_next(mload_value), Op.MLOAD(0))
         ),
         storage={"0x00": "0xdeadbeef"},
     )
@@ -482,7 +501,9 @@ def test_clz_code_copy_operation(state_test: StateTestFiller, pre: Alloc, bits: 
 @pytest.mark.valid_from("Osaka")
 @pytest.mark.parametrize("bits", [0, 64, 255])
 @pytest.mark.parametrize("opcode", [Op.CODECOPY, Op.EXTCODECOPY])
-def test_clz_with_memory_operation(state_test: StateTestFiller, pre: Alloc, bits: int, opcode: Op):
+def test_clz_with_memory_operation(
+    state_test: StateTestFiller, pre: Alloc, bits: int, opcode: Op
+) -> None:
     """Test CLZ opcode with memory operation."""
     storage = Storage()
 
@@ -494,8 +515,9 @@ def test_clz_with_memory_operation(state_test: StateTestFiller, pre: Alloc, bits
     #   MSTORE
     #
     # This sequence stores a 32-byte value in memory.
-    # Later, we copy the immediate value from the PUSH32 instruction into memory
-    # using CODECOPY or EXTCODECOPY, and then load it with MLOAD for the CLZ test.
+    # Later, we copy the immediate value from the PUSH32 instruction into
+    # memory using CODECOPY or EXTCODECOPY, and then load it with MLOAD for
+    # the CLZ test.
     target_code = Op.PUSH32(1 << bits)
     offset = 1
 
@@ -530,8 +552,9 @@ def test_clz_with_memory_operation(state_test: StateTestFiller, pre: Alloc, bits
     state_test(pre=pre, post=post, tx=tx)
 
 
+@EIPChecklist.Opcode.Test.ExecutionContext.Initcode.Behavior.Tx()
 @pytest.mark.valid_from("Osaka")
-def test_clz_initcode_context(state_test: StateTestFiller, pre: Alloc):
+def test_clz_initcode_context(state_test: StateTestFiller, pre: Alloc) -> None:
     """Test CLZ opcode behavior when creating a contract."""
     bits = [0, 1, 64, 128, 255]
 
@@ -559,9 +582,10 @@ def test_clz_initcode_context(state_test: StateTestFiller, pre: Alloc):
     state_test(pre=pre, post=post, tx=tx)
 
 
+@EIPChecklist.Opcode.Test.ExecutionContext.Initcode.Behavior.Opcode()
 @pytest.mark.valid_from("Osaka")
 @pytest.mark.parametrize("opcode", [Op.CREATE, Op.CREATE2])
-def test_clz_initcode_create(state_test: StateTestFiller, pre: Alloc, opcode: Op):
+def test_clz_initcode_create(state_test: StateTestFiller, pre: Alloc, opcode: Op) -> None:
     """Test CLZ opcode behavior when creating a contract."""
     bits = [0, 1, 64, 128, 255]  # expected values: [255, 254, 191, 127, 0]
 
@@ -609,6 +633,10 @@ class CallingContext:
     no_context = 3  # STATICCALL
 
 
+@EIPChecklist.Opcode.Test.ExecutionContext.Call()
+@EIPChecklist.Opcode.Test.ExecutionContext.Delegatecall()
+@EIPChecklist.Opcode.Test.ExecutionContext.Callcode()
+@EIPChecklist.Opcode.Test.ExecutionContext.Staticcall()
 @pytest.mark.valid_from("Osaka")
 @pytest.mark.parametrize(
     "opcode,context",
@@ -621,7 +649,7 @@ class CallingContext:
 )
 def test_clz_call_operation(
     state_test: StateTestFiller, pre: Alloc, opcode: Op, context: CallingContext
-):
+) -> None:
     """Test CLZ opcode with call operation."""
     test_cases = [0, 64, 255]
 

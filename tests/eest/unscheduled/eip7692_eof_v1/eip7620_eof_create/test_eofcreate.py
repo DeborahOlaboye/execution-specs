@@ -14,9 +14,9 @@ from ethereum_test_tools import (
     Transaction,
     compute_eofcreate_address,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
-from ethereum_test_vm.bytecode import Bytecode
+from ethereum_test_vm import Bytecode
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from ..eip7069_extcall.spec import EXTCALL_SUCCESS
@@ -45,7 +45,7 @@ pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 def test_simple_eofcreate(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Verifies a simple EOFCREATE case."""
     env = Environment()
     sender = pre.fund_eoa()
@@ -75,8 +75,11 @@ def test_simple_eofcreate(
 def test_eofcreate_then_dataload(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies that a contract returned with auxdata does not overwrite the parent data."""
+) -> None:
+    """
+    Verifies that a contract returned with auxdata does not overwrite the
+    parent data.
+    """
     env = Environment()
     sender = pre.fund_eoa()
     small_auxdata_container = Container(
@@ -123,8 +126,10 @@ def test_eofcreate_then_dataload(
 def test_eofcreate_then_call(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies a simple EOFCREATE case, and then calls the deployed contract."""
+) -> None:
+    """
+    Verifies a simple EOFCREATE case, and then calls the deployed contract.
+    """
     env = Environment()
     callable_contract = Container(
         sections=[
@@ -189,7 +194,7 @@ def test_eofcreate_then_call(
         pytest.param(b"aabbccddeeffgghhii", id="extra"),
     ],
 )
-def test_auxdata_variations(state_test: StateTestFiller, pre: Alloc, auxdata_bytes: bytes):
+def test_auxdata_variations(state_test: StateTestFiller, pre: Alloc, auxdata_bytes: bytes) -> None:
     """Verifies that auxdata bytes are correctly handled in RETURNCODE."""
     env = Environment()
     auxdata_size = len(auxdata_bytes)
@@ -251,7 +256,7 @@ def test_auxdata_variations(state_test: StateTestFiller, pre: Alloc, auxdata_byt
     state_test(env=env, pre=pre, post=post, tx=tx)
 
 
-def test_calldata(state_test: StateTestFiller, pre: Alloc):
+def test_calldata(state_test: StateTestFiller, pre: Alloc) -> None:
     """Verifies CALLDATA passing through EOFCREATE."""
     env = Environment()
 
@@ -313,8 +318,10 @@ def test_calldata(state_test: StateTestFiller, pre: Alloc):
 def test_eofcreate_in_initcode(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies an EOFCREATE occurring within initcode creates that contract."""
+) -> None:
+    """
+    Verifies an EOFCREATE occurring within initcode creates that contract.
+    """
     nested_initcode_subcontainer = Container(
         sections=[
             Section.Code(
@@ -367,8 +374,11 @@ def test_eofcreate_in_initcode(
 def test_eofcreate_in_initcode_reverts(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies an EOFCREATE occurring in an initcode is rolled back when the initcode reverts."""
+) -> None:
+    """
+    Verifies an EOFCREATE occurring in an initcode is rolled back when the
+    initcode reverts.
+    """
     nested_initcode_subcontainer = Container(
         sections=[
             Section.Code(
@@ -421,8 +431,11 @@ def test_eofcreate_in_initcode_reverts(
 def test_return_data_cleared(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies the return data is not reused from a extcall but is cleared upon eofcreate."""
+) -> None:
+    """
+    Verifies the return data is not reused from a extcall but is cleared upon
+    eofcreate.
+    """
     env = Environment()
     value_return_canary = 0x4158675309
     value_return_canary_size = 5
@@ -484,7 +497,7 @@ def test_return_data_cleared(
 def test_address_collision(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Tests address collision."""
     env = Environment(
         gas_limit=300_000_000_000,
@@ -518,8 +531,10 @@ def test_address_collision(
         contract_address: Account(
             storage={
                 slot_create_address: salt_zero_address,
-                slot_create_address_2: EOFCREATE_FAILURE,  # had an in-transaction collision
-                slot_create_address_3: EOFCREATE_FAILURE,  # had a pre-existing collision
+                # had an in-transaction collision
+                slot_create_address_2: EOFCREATE_FAILURE,
+                # had a pre-existing collision
+                slot_create_address_3: EOFCREATE_FAILURE,
                 slot_code_worked: value_code_worked,
             }
         )
@@ -539,8 +554,11 @@ def test_address_collision(
 def test_eofcreate_revert_eof_returndata(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies the return data is not being deployed, even if happens to be valid EOF."""
+) -> None:
+    """
+    Verifies the return data is not being deployed, even if happens to be valid
+    EOF.
+    """
     env = Environment()
     code_reverts_with_calldata = Container(
         name="Initcode Subcontainer reverting with its calldata",
@@ -597,7 +615,7 @@ def test_eofcreate_revert_eof_returndata(
 def test_eofcreate_invalid_index(
     eof_test: EOFTestFiller,
     index: int,
-):
+) -> None:
     """EOFCREATE referring non-existent container section index."""
     container = Container.Code(code=Op.EOFCREATE[index](0, 0, 0, 0) + Op.STOP)
     if index != 0:
@@ -611,7 +629,7 @@ def test_eofcreate_invalid_index(
 
 def test_eofcreate_invalid_truncated_immediate(
     eof_test: EOFTestFiller,
-):
+) -> None:
     """EOFCREATE instruction with missing immediate byte."""
     eof_test(
         container=Container(
@@ -637,8 +655,10 @@ def test_eofcreate_truncated_container(
     eof_test: EOFTestFiller,
     data_len: int,
     data_section_size: int,
-):
-    """EOFCREATE instruction targeting a container with truncated data section."""
+) -> None:
+    """
+    EOFCREATE instruction targeting a container with truncated data section.
+    """
     assert data_len < data_section_size
     eof_test(
         container=Container(
@@ -674,7 +694,7 @@ def test_eofcreate_context(
     pre: Alloc,
     destination_code: Bytecode,
     expected_result: str,
-):
+) -> None:
     """Test EOFCREATE's initcode context instructions."""
     env = Environment()
     sender = pre.fund_eoa()
@@ -716,7 +736,8 @@ def test_eofcreate_context(
     elif expected_result == "selfbalance":
         expected_bytes = eofcreate_value
     elif expected_result == "factorybalance":
-        # Factory receives value from sender and passes on eofcreate_value as endowment.
+        # Factory receives value from sender and passes on eofcreate_value as
+        # endowment.
         expected_bytes = value - eofcreate_value
     else:
         raise TypeError("Unexpected expected_result", expected_result)
@@ -746,8 +767,11 @@ def test_eofcreate_context(
 def test_eofcreate_memory_context(
     state_test: StateTestFiller,
     pre: Alloc,
-):
-    """Verifies an EOFCREATE frame enjoys a separate EVM memory from its caller frame."""
+) -> None:
+    """
+    Verifies an EOFCREATE frame enjoys a separate EVM memory from its caller
+    frame.
+    """
     env = Environment()
     destination_storage = Storage()
     contract_storage = Storage()

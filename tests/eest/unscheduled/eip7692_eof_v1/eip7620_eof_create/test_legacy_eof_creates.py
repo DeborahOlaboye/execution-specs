@@ -11,10 +11,10 @@ from ethereum_test_tools import (
     Transaction,
 )
 from ethereum_test_tools import Initcode as LegacyInitcode
-from ethereum_test_tools.vm.opcode import Opcodes
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container
 from ethereum_test_types.helpers import compute_create_address
+from ethereum_test_vm import Opcodes
+from ethereum_test_vm import Opcodes as Op
 
 from ....prague.eip7702_set_code_tx.spec import Spec
 from .. import EOF_FORK_NAME
@@ -55,8 +55,11 @@ def test_cross_version_creates_fail_light(
     pre: Alloc,
     legacy_create_opcode: Opcodes,
     initcode: Bytes | Container,
-):
-    """Verifies that CREATE and CREATE2 cannot run EOF initcodes and fail early on attempt."""
+) -> None:
+    """
+    Verifies that CREATE and CREATE2 cannot run EOF initcodes and fail early on
+    attempt.
+    """
     env = Environment()
 
     sender = pre.fund_eoa()
@@ -66,7 +69,8 @@ def test_cross_version_creates_fail_light(
     contract_address = pre.deploy_contract(
         code=Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE)
         + Op.SSTORE(slot_create_address, legacy_create_opcode(size=Op.CALLDATASIZE))
-        # Approximates whether code until here consumed the 63/64th gas given to subcall
+        # Approximates whether code until here consumed the 63/64th gas given
+        # to subcall
         + Op.SSTORE(slot_all_subcall_gas_gone, Op.LT(Op.GAS, tx_gas_limit // 64))
         + Op.SSTORE(slot_code_worked, value_code_worked)
         + Op.STOP
@@ -124,10 +128,10 @@ def test_cross_version_creates_fail_hard(
     pre: Alloc,
     legacy_create_opcode: Opcodes,
     initcode: Bytes,
-):
+) -> None:
     """
-    Verifies that CREATE and CREATE2 fail hard on attempt to run initcode starting with `EF` but
-    not `EF00`.
+    Verifies that CREATE and CREATE2 fail hard on attempt to run initcode
+    starting with `EF` but not `EF00`.
     """
     env = Environment()
 
@@ -138,7 +142,8 @@ def test_cross_version_creates_fail_hard(
     contract_address = pre.deploy_contract(
         code=Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE)
         + Op.SSTORE(slot_create_address, legacy_create_opcode(size=Op.CALLDATASIZE))
-        # Approximates whether code until here consumed the 63/64th gas given to subcall
+        # Approximates whether code until here consumed the 63/64th gas given
+        # to subcall
         + Op.SSTORE(slot_all_subcall_gas_gone, Op.LT(Op.GAS, tx_gas_limit // 64))
         + Op.SSTORE(slot_code_worked, value_code_worked)
         + Op.STOP
@@ -197,7 +202,7 @@ def test_legacy_initcode_eof_contract_fails(
     pre: Alloc,
     legacy_create_opcode: Opcodes,
     deploy_code: Bytes | Container,
-):
+) -> None:
     """
     Verifies that legacy initcode cannot create EOF.
 

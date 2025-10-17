@@ -1,8 +1,6 @@
 """
-abstract: Tests [EIP-7002: Execution layer triggerable withdrawals](https://eips.ethereum.org/EIPS/eip-7002)
-    Test execution layer triggered exits [EIP-7002: Execution layer triggerable withdrawals](https://eips.ethereum.org/EIPS/eip-7002).
-
-"""  # noqa: E501
+Tests [EIP-7002: Execution layer triggerable withdrawals](https://eips.ethereum.org/EIPS/eip-7002).
+"""
 
 from typing import List
 
@@ -635,7 +633,7 @@ def test_withdrawal_requests(
     blockchain_test: BlockchainTestFiller,
     blocks: List[Block],
     pre: Alloc,
-):
+) -> None:
     """Test making a withdrawal request to the beacon chain."""
     blockchain_test(
         genesis_environment=Environment(),
@@ -814,10 +812,10 @@ def test_withdrawal_requests_negative(
     requests: List[WithdrawalRequestInteractionBase],
     block_body_override_requests: List[WithdrawalRequest],
     exception: BlockException,
-):
+) -> None:
     """
-    Test blocks where the requests list and the actual withdrawal requests that happened in the
-    block's transactions do not match.
+    Test blocks where the requests list and the actual withdrawal requests that
+    happened in the block's transactions do not match.
     """
     for d in requests:
         d.update_pre(pre)

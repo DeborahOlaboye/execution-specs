@@ -1,7 +1,4 @@
 """
-abstract: Tests that benchmark EVMs in worst-case opcode scenarios.
-    Tests that benchmark EVMs in worst-case opcode scenarios.
-
 Tests that benchmark EVMs in worst-case opcode scenarios.
 """
 
@@ -9,24 +6,23 @@ import math
 
 import pytest
 
+from ethereum_test_benchmark.benchmark_code_generator import JumpLoopGenerator
 from ethereum_test_forks import Fork
 from ethereum_test_tools import (
     Account,
     Alloc,
+    BenchmarkTestFiller,
     Block,
     BlockchainTestFiller,
     Bytecode,
     Environment,
     Hash,
-    StateTestFiller,
     Transaction,
     While,
     compute_create2_address,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.helpers import compute_create_address
-
-from .helpers import code_loop_precompile_call
+from ethereum_test_vm import Opcodes as Op
 
 REFERENCE_SPEC_GIT_PATH = "TODO"
 REFERENCE_SPEC_VERSION = "TODO"
@@ -54,32 +50,32 @@ def test_worst_bytecode_single_opcode(
     opcode: Op,
     env: Environment,
     gas_benchmark_value: int,
-):
+) -> None:
     """
-    Test a block execution where a single opcode execution maxes out the gas limit,
-    and the opcodes access a huge amount of contract code.
+    Test a block execution where a single opcode execution maxes out the gas
+    limit, and the opcodes access a huge amount of contract code.
 
-    We first use a single block to deploy a factory contract that will be used to deploy
-    a large number of contracts.
+    We first use a single block to deploy a factory contract that will be used
+    to deploy a large number of contracts.
 
     This is done to avoid having a big pre-allocation size for the test.
 
-    The test is performed in the last block of the test, and the entire block gas limit is
-    consumed by repeated opcode executions.
+    The test is performed in the last block of the test, and the entire block
+    gas limit is consumed by repeated opcode executions.
     """
-    # The attack gas limit is the gas limit which the target tx will use
-    # The test will scale the block gas limit to setup the contracts accordingly to be
-    # able to pay for the contract deposit. This has to take into account the 200 gas per byte,
-    # but also the quadratic memory expansion costs which have to be paid each time the
-    # memory is being setup
+    # The attack gas limit is the gas limit which the target tx will use The
+    # test will scale the block gas limit to setup the contracts accordingly to
+    # be able to pay for the contract deposit. This has to take into account
+    # the 200 gas per byte, but also the quadratic memory expansion costs which
+    # have to be paid each time the memory is being setup
     attack_gas_limit = gas_benchmark_value
     max_contract_size = fork.max_code_size()
 
     gas_costs = fork.gas_costs()
 
-    # Calculate the absolute minimum gas costs to deploy the contract
-    # This does not take into account setting up the actual memory (using KECCAK256 and XOR)
-    # so the actual costs of deploying the contract is higher
+    # Calculate the absolute minimum gas costs to deploy the contract This does
+    # not take into account setting up the actual memory (using KECCAK256 and
+    # XOR) so the actual costs of deploying the contract is higher
     memory_expansion_gas_calculator = fork.memory_expansion_gas_calculator()
     memory_gas_minimum = memory_expansion_gas_calculator(new_bytes=len(bytes(max_contract_size)))
     code_deposit_gas_minimum = (
@@ -90,7 +86,8 @@ def test_worst_bytecode_single_opcode(
     # Calculate the loop cost of the attacker to query one address
     loop_cost = (
         gas_costs.G_KECCAK_256  # KECCAK static cost
-        + math.ceil(85 / 32) * gas_costs.G_KECCAK_256_WORD  # KECCAK dynamic cost for CREATE2
+        + math.ceil(85 / 32) * gas_costs.G_KECCAK_256_WORD  # KECCAK dynamic
+        # cost for CREATE2
         + gas_costs.G_VERY_LOW * 3  # ~MSTOREs+ADDs
         + gas_costs.G_COLD_ACCOUNT_ACCESS  # Opcode cost
         + 30  # ~Gluing opcodes
@@ -101,8 +98,9 @@ def test_worst_bytecode_single_opcode(
         attack_gas_limit - intrinsic_gas_cost_calc() - gas_costs.G_VERY_LOW * 4
     ) // loop_cost
 
-    # Set the block gas limit to a relative high value to ensure the code deposit tx
-    # fits in the block (there is enough gas available in the block to execute this)
+    # Set the block gas limit to a relative high value to ensure the code
+    # deposit tx fits in the block (there is enough gas available in the block
+    # to execute this)
     minimum_gas_limit = code_deposit_gas_minimum * 2 * num_contracts
     if env.gas_limit < minimum_gas_limit:
         raise Exception(
@@ -111,16 +109,17 @@ def test_worst_bytecode_single_opcode(
             "optimizing gas usage during the setup phase of this test."
         )
 
-    # The initcode will take its address as a starting point to the input to the keccak
-    # hash function.
-    # It will reuse the output of the hash function in a loop to create a large amount of
-    # seemingly random code, until it reaches the maximum contract size.
+    # The initcode will take its address as a starting point to the input to
+    # the keccak hash function. It will reuse the output of the hash function
+    # in a loop to create a large amount of seemingly random code, until it
+    # reaches the maximum contract size.
     initcode = (
         Op.MSTORE(0, Op.ADDRESS)
         + While(
             body=(
                 Op.SHA3(Op.SUB(Op.MSIZE, 32), 32)
-                # Use a xor table to avoid having to call the "expensive" sha3 opcode as much
+                # Use a xor table to avoid having to call the "expensive" sha3
+                # opcode as much
                 + sum(
                     (Op.PUSH32[xor_value] + Op.XOR + Op.DUP1 + Op.MSIZE + Op.MSTORE)
                     for xor_value in XOR_TABLE
@@ -129,16 +128,16 @@ def test_worst_bytecode_single_opcode(
             ),
             condition=Op.LT(Op.MSIZE, max_contract_size),
         )
-        # Despite the whole contract has random bytecode, we make the first opcode be a STOP
-        # so CALL-like attacks return as soon as possible, while EXTCODE(HASH|SIZE) work as
-        # intended.
+        # Despite the whole contract has random bytecode, we make the first
+        # opcode be a STOP so CALL-like attacks return as soon as possible,
+        # while EXTCODE(HASH|SIZE) work as intended.
         + Op.MSTORE8(0, 0x00)
         + Op.RETURN(0, max_contract_size)
     )
     initcode_address = pre.deploy_contract(code=initcode)
 
-    # The factory contract will simply use the initcode that is already deployed,
-    # and create a new contract and return its address if successful.
+    # The factory contract will simply use the initcode that is already
+    # deployed, and create a new contract and return its address if successful.
     factory_code = (
         Op.EXTCODECOPY(
             address=initcode_address,
@@ -160,8 +159,8 @@ def test_worst_bytecode_single_opcode(
     )
     factory_address = pre.deploy_contract(code=factory_code)
 
-    # The factory caller will call the factory contract N times, creating N new contracts.
-    # Calldata should contain the N value.
+    # The factory caller will call the factory contract N times, creating N new
+    # contracts. Calldata should contain the N value.
     factory_caller_code = Op.CALLDATALOAD(0) + While(
         body=Op.POP(Op.CALL(address=factory_address)),
         condition=Op.PUSH1(1) + Op.SWAP1 + Op.SUB + Op.DUP1 + Op.ISZERO + Op.ISZERO,
@@ -208,8 +207,8 @@ def test_worst_bytecode_single_opcode(
     )
 
     if len(attack_code) > max_contract_size:
-        # TODO: A workaround could be to split the opcode code into multiple contracts
-        # and call them in sequence.
+        # TODO: A workaround could be to split the opcode code into multiple
+        # contracts and call them in sequence.
         raise ValueError(
             f"Code size {len(attack_code)} exceeds maximum code size {max_contract_size}"
         )
@@ -245,26 +244,24 @@ def test_worst_bytecode_single_opcode(
     ids=lambda x: x.hex(),
 )
 def test_worst_initcode_jumpdest_analysis(
-    state_test: StateTestFiller,
-    pre: Alloc,
+    benchmark_test: BenchmarkTestFiller,
     fork: Fork,
     pattern: Bytecode,
-    gas_benchmark_value: int,
-):
+) -> None:
     """
     Test the jumpdest analysis performance of the initcode.
 
-    This benchmark places a very long initcode in the memory and then invoke CREATE instructions
-    with this initcode up to the block gas limit. The initcode itself has minimal execution time
-    but forces the EVM to perform the full jumpdest analysis on the parametrized byte pattern.
-    The initicode is modified by mixing-in the returned create address between CREATE invocations
-    to prevent caching.
+    This benchmark places a very long initcode in the memory and then invoke
+    CREATE instructions with this initcode up to the block gas limit. The
+    initcode itself has minimal execution time but forces the EVM to perform
+    the full jumpdest analysis on the parametrized byte pattern. The initicode
+    is modified by mixing-in the returned create address between CREATE
+    invocations to prevent caching.
     """
-    max_code_size = fork.max_code_size()
     initcode_size = fork.max_initcode_size()
 
-    # Expand the initcode pattern to the transaction data so it can be used in CALLDATACOPY
-    # in the main contract. TODO: tune the tx_data_len param.
+    # Expand the initcode pattern to the transaction data so it can be used in
+    # CALLDATACOPY in the main contract. TODO: tune the tx_data_len param.
     tx_data_len = 1024
     tx_data = pattern * (tx_data_len // len(pattern))
     tx_data += (tx_data_len - len(tx_data)) * bytes(Op.JUMPDEST)
@@ -290,35 +287,20 @@ def test_worst_initcode_jumpdest_analysis(
     # Make sure the last opcode in the initcode is JUMPDEST.
     code_prepare_initcode += Op.MSTORE(initcode_size - 32, Op.PUSH32[bytes(Op.JUMPDEST) * 32])
 
-    code_invoke_create = (
+    attack_block = (
         Op.PUSH1[len(initcode_prefix)]
         + Op.MSTORE
         + Op.CREATE(value=Op.PUSH0, offset=Op.PUSH0, size=Op.MSIZE)
     )
 
-    initial_random = Op.PUSH0
-    code_prefix = code_prepare_initcode + initial_random
-    code_loop_header = Op.JUMPDEST
-    code_loop_footer = Op.JUMP(len(code_prefix))
-    code_loop_body_len = (
-        max_code_size - len(code_prefix) - len(code_loop_header) - len(code_loop_footer)
-    )
+    setup = code_prepare_initcode + Op.PUSH0
 
-    code_loop_body = (code_loop_body_len // len(code_invoke_create)) * bytes(code_invoke_create)
-    code = code_prefix + code_loop_header + code_loop_body + code_loop_footer
-    assert (max_code_size - len(code_invoke_create)) < len(code) <= max_code_size
-
-    tx = Transaction(
-        to=pre.deploy_contract(code=code),
-        data=tx_data,
-        gas_limit=gas_benchmark_value,
-        sender=pre.fund_eoa(),
-    )
-
-    state_test(
-        pre=pre,
-        post={},
-        tx=tx,
+    benchmark_test(
+        code_generator=JumpLoopGenerator(
+            setup=setup,
+            attack_block=attack_block,
+            tx_kwargs={"data": tx_data},
+        ),
     )
 
 
@@ -332,8 +314,9 @@ def test_worst_initcode_jumpdest_analysis(
 @pytest.mark.parametrize(
     "max_code_size_ratio, non_zero_data, value",
     [
-        # To avoid a blowup of combinations, the value dimension is only explored for
-        # the non-zero data case, so isn't affected by code size influence.
+        # To avoid a blowup of combinations, the value dimension is only
+        # explored for the non-zero data case, so isn't affected by code size
+        # influence.
         pytest.param(0, False, 0, id="0 bytes without value"),
         pytest.param(0, False, 1, id="0 bytes with value"),
         pytest.param(0.25, True, 0, id="0.25x max code size with non-zero data"),
@@ -347,16 +330,17 @@ def test_worst_initcode_jumpdest_analysis(
     ],
 )
 def test_worst_create(
-    state_test: StateTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     fork: Fork,
     opcode: Op,
     max_code_size_ratio: float,
     non_zero_data: bool,
     value: int,
-    gas_benchmark_value: int,
-):
-    """Test the CREATE and CREATE2 performance with different configurations."""
+) -> None:
+    """
+    Test the CREATE and CREATE2 performance with different configurations.
+    """
     max_code_size = fork.max_code_size()
 
     code_size = int(max_code_size * max_code_size_ratio)
@@ -381,14 +365,16 @@ def test_worst_create(
     # Create the benchmark contract which has the following design:
     # ```
     # PUSH(value)
-    # [EXTCODECOPY(full initcode_template_contract) -- Conditional that non_zero_data is True]`
+    # [EXTCODECOPY(full initcode_template_contract)
+    # -> Conditional that non_zero_data is True]
+    #
     # JUMPDEST (#)
     # (CREATE|CREATE2)
     # (CREATE|CREATE2)
     # ...
     # JUMP(#)
     # ```
-    code_prefix = (
+    setup = (
         Op.PUSH3(code_size)
         + Op.PUSH1(value)
         + Op.EXTCODECOPY(
@@ -399,7 +385,7 @@ def test_worst_create(
 
     if opcode == Op.CREATE2:
         # For CREATE2, we provide an initial salt.
-        code_prefix = code_prefix + Op.PUSH1(42)
+        setup += Op.PUSH1(42)
 
     attack_block = (
         # For CREATE:
@@ -407,26 +393,25 @@ def test_worst_create(
         # - DUP3 refers to PUSH1(value) above.
         Op.POP(Op.CREATE(value=Op.DUP3, offset=0, size=Op.DUP2))
         if opcode == Op.CREATE
-        # For CREATE2: we manually push the arguments because we leverage the return value of
-        # previous CREATE2 calls as salt for the next CREATE2 call.
-        #  - DUP4 is targeting the PUSH1(value) from the code_prefix.
-        #  - DUP3 is targeting the EXTCODESIZE value pushed in code_prefix.
+        # For CREATE2: we manually push the arguments because we leverage the
+        # return value of previous CREATE2 calls as salt for the next CREATE2
+        # call.
+        # - DUP4 is targeting the PUSH1(value) from the code_prefix.
+        # - DUP3 is targeting the EXTCODESIZE value pushed in code_prefix.
         else Op.DUP3 + Op.PUSH0 + Op.DUP4 + Op.CREATE2
     )
-    code = code_loop_precompile_call(code_prefix, attack_block, fork)
+
+    code = JumpLoopGenerator(setup=setup, attack_block=attack_block).generate_repeated_code(
+        repeated_code=attack_block, setup=setup, fork=fork
+    )
 
     tx = Transaction(
         # Set enough balance in the pre-alloc for `value > 0` configurations.
         to=pre.deploy_contract(code=code, balance=1_000_000_000 if value > 0 else 0),
-        gas_limit=gas_benchmark_value,
         sender=pre.fund_eoa(),
     )
 
-    state_test(
-        pre=pre,
-        post={},
-        tx=tx,
-    )
+    benchmark_test(tx=tx)
 
 
 @pytest.mark.parametrize(
@@ -437,27 +422,27 @@ def test_worst_create(
     ],
 )
 def test_worst_creates_collisions(
-    state_test: StateTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     fork: Fork,
     opcode: Op,
     gas_benchmark_value: int,
-):
+) -> None:
     """Test the CREATE and CREATE2 collisions performance."""
-    # We deploy a "proxy contract" which is the contract that will be called in a loop
-    # using all the gas in the block. This "proxy contract" is the one executing CREATE2
-    # failing with a collision.
-    # The reason why we need a "proxy contract" is that CREATE(2) failing with a collision will
-    # consume all the available gas. If we try to execute the CREATE(2) directly without being
-    # wrapped **and capped in gas** in a previous CALL, we would run out of gas very fast!
-    #
-    # The proxy contract calls CREATE(2) with empty initcode. The current call frame gas will
-    # be exhausted because of the collision. For this reason the caller will carefully give us
-    # the minimal gas necessary to execute the CREATE(2) and not waste any extra gas in the
-    # CREATE(2)-failure.
-    #
-    # Note that these CREATE(2) calls will fail because in (**) below we pre-alloc contracts
-    # with the same address as the ones that CREATE(2) will try to create.
+    # We deploy a "proxy contract" which is the contract that will be called in
+    # a loop using all the gas in the block. This "proxy contract" is the one
+    # executing CREATE2 failing with a collision. The reason why we need a
+    # "proxy contract" is that CREATE(2) failing with a collision will consume
+    # all the available gas. If we try to execute the CREATE(2) directly
+    # without being wrapped **and capped in gas** in a previous CALL, we would
+    # run out of gas very fast!
+    # The proxy contract calls CREATE(2) with empty initcode. The current call
+    # frame gas will be exhausted because of the collision. For this reason the
+    # caller will carefully give us the minimal gas necessary to execute the
+    # CREATE(2) and not waste any extra gas in the CREATE(2)-failure.
+    # Note that these CREATE(2) calls will fail because in (**) below we pre-
+    # alloc contracts with the same address as the ones that CREATE(2) will try
+    # to create.
     proxy_contract = pre.deploy_contract(
         code=Op.CREATE2(value=Op.PUSH0, salt=Op.PUSH0, offset=Op.PUSH0, size=Op.PUSH0)
         if opcode == Op.CREATE2
@@ -465,19 +450,18 @@ def test_worst_creates_collisions(
     )
 
     gas_costs = fork.gas_costs()
-    # The CALL to the proxy contract needs at a minimum gas corresponding to the CREATE(2)
-    # plus extra required PUSH0s for arguments.
+    # The CALL to the proxy contract needs at a minimum gas corresponding to
+    # the CREATE(2) plus extra required PUSH0s for arguments.
     min_gas_required = gas_costs.G_CREATE + gas_costs.G_BASE * (3 if opcode == Op.CREATE else 4)
-    code_prefix = Op.PUSH20(proxy_contract) + Op.PUSH3(min_gas_required)
+    setup = Op.PUSH20(proxy_contract) + Op.PUSH3(min_gas_required)
     attack_block = Op.POP(
         # DUP7 refers to the PUSH3 above.
         # DUP7 refers to the proxy contract address.
         Op.CALL(gas=Op.DUP7, address=Op.DUP7)
     )
-    code = code_loop_precompile_call(code_prefix, attack_block, fork)
-    tx_target = pre.deploy_contract(code=code)
 
-    # (**) We deploy the contract that CREATE(2) will attempt to create so any attempt will fail.
+    # (**) We deploy the contract that CREATE(2) will attempt to create so any
+    # attempt will fail.
     if opcode == Op.CREATE2:
         addr = compute_create2_address(address=proxy_contract, salt=0, initcode=[])
         pre.deploy_contract(address=addr, code=Op.INVALID)
@@ -488,14 +472,6 @@ def test_worst_creates_collisions(
             addr = compute_create_address(address=proxy_contract, nonce=nonce)
             pre.deploy_contract(address=addr, code=Op.INVALID)
 
-    tx = Transaction(
-        to=tx_target,
-        gas_limit=gas_benchmark_value,
-        sender=pre.fund_eoa(),
-    )
-
-    state_test(
-        pre=pre,
-        post={},
-        tx=tx,
+    benchmark_test(
+        code_generator=JumpLoopGenerator(setup=setup, attack_block=attack_block),
     )

@@ -1,17 +1,20 @@
-"""Code validation of CALLF, JUMPF, RETF opcodes in conjunction with static relative jumps."""
+"""
+Code validation of CALLF, JUMPF, RETF opcodes in conjunction with static
+relative jumps.
+"""
 
 import itertools
 from enum import Enum, auto, unique
-from typing import Tuple
+from typing import Generator, Tuple, Union
 
 import pytest
 
 from ethereum_test_exceptions.exceptions import EOFException
 from ethereum_test_tools import Account, EOFStateTestFiller, EOFTestFiller
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
 from ethereum_test_types.eof.v1.constants import MAX_STACK_INCREASE_LIMIT, NON_RETURNING_SECTION
-from ethereum_test_vm.bytecode import Bytecode
+from ethereum_test_vm import Bytecode, Opcode
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from ..eip3540_eof_v1.test_all_opcodes_in_container import valid_eof_opcodes
@@ -51,7 +54,9 @@ class RjumpKind(Enum):
 
 @unique
 class RjumpSpot(Enum):
-    """Possible spots in the code section layout where the RJUMP* is injected."""
+    """
+    Possible spots in the code section layout where the RJUMP* is injected.
+    """
 
     BEGINNING = auto()
     BEFORE_TERMINATION = auto()
@@ -65,14 +70,16 @@ def rjump_code_with(
     rjump_kind: RjumpKind | None, code_so_far_len: int, next_code: Bytecode
 ) -> Tuple[Bytecode, bool, bool, bool]:
     """
-    Unless `rjump_kind` is None generates a code snippet with an RJUMP* instruction.
-    For some kinds `code_so_far_len` must be code length in bytes preceding the snippet.
-    For some kinds `next_code_len` must be code length in bytes of some code which follows.
+    Unless `rjump_kind` is None generates a code snippet with an RJUMP*
+    instruction. For some kinds `code_so_far_len` must be code length in bytes
+    preceding the snippet. For some kinds `next_code_len` must be code length
+    in bytes of some code which follows.
 
-    It is expected that the snippet and the jump target are valid, but the resulting code
-    or its stack balance might not.
+    It is expected that the snippet and the jump target are valid, but the
+    resulting code or its stack balance might not.
 
-    Also returns some traits of the snippet: `is_backwards`, `pops` and `pushes`
+    Also returns some traits of the snippet: `is_backwards`, `pops` and
+    `pushes`
     """
     body = Bytecode()
 
@@ -124,8 +131,9 @@ def rjump_code_with(
         raise TypeError("unknown rjumps value" + str(rjump_kind))
 
     if jumps_over_next:
-        # This is against intuition, but if the code we're jumping over pushes, the path
-        # which misses it will be short of stack items, as if the RJUMP* popped and vice versa.
+        # This is against intuition, but if the code we're jumping over pushes,
+        # the path which misses it will be short of stack items, as if the
+        # RJUMP* popped and vice versa.
         if next_code.pushed_stack_items > next_code.popped_stack_items:
             pops = True
         elif next_code.popped_stack_items > next_code.pushed_stack_items:
@@ -134,12 +142,13 @@ def rjump_code_with(
     return body, is_backwards, pops, pushes
 
 
-def call_code_with(inputs, outputs, call: Bytecode) -> Bytecode:
+def call_code_with(inputs: int, outputs: int, call: Bytecode) -> Bytecode:
     """
-    Generate code snippet with the `call` bytecode provided and its respective input/output
-    management.
+    Generate code snippet with the `call` bytecode provided and its respective
+    input/output management.
 
-    `inputs` and `outputs` are understood as those of the code section we're generating for.
+    `inputs` and `outputs` are understood as those of the code section we're
+    generating for.
     """
     body = Bytecode()
 
@@ -168,8 +177,8 @@ def section_code_with(
     """
     Generate code section with RJUMP* and CALLF/RETF instructions.
 
-    Also returns some traits of the section: `has_invalid_back_jump`, `rjump_snippet_pops`,
-    `rjump_snippet_pushes`, `rjump_falls_off_code`
+    Also returns some traits of the section: `has_invalid_back_jump`,
+    `rjump_snippet_pops`, `rjump_snippet_pushes`, `rjump_falls_off_code`
     """
     code = Bytecode()
     code.pushed_stack_items, code.max_stack_height = (inputs, inputs)
@@ -214,7 +223,8 @@ def section_code_with(
             RjumpKind.RJUMPI_OVER_NEXT_NESTED,
             RjumpKind.RJUMPV_EMPTY_AND_OVER_NEXT,
         ]:
-            # Jump over termination or jump over body, but there is nothing after the body.
+            # Jump over termination or jump over body, but there is nothing
+            # after the body.
             rjump_falls_off_code = True
 
     code += termination
@@ -256,14 +266,16 @@ def test_rjumps_callf_retf(
     rjump_kind: RjumpKind,
     rjump_section_idx: int,
     rjump_spot: RjumpSpot,
-):
+) -> None:
     """
     Test EOF container validation for EIP-4200 vs EIP-4750 interactions.
 
-    Each test's code consists of `num_sections` code sections, which call into one another
-    and then return. Code may include RJUMP* snippets of `rjump_kind` in various `rjump_spots`.
+    Each test's code consists of `num_sections` code sections, which call into
+    one another and then return. Code may include RJUMP* snippets of
+    `rjump_kind` in various `rjump_spots`.
     """
-    # Zeroth section has always 0 inputs and 0 outputs, so is excluded from param
+    # Zeroth section has always 0 inputs and 0 outputs, so is excluded from
+    # param
     inputs = (0,) + inputs
     outputs = (0,) + outputs
 
@@ -316,7 +328,8 @@ def test_rjumps_callf_retf(
             container_has_invalid_back_jump = True
         if rjump_snippet_pops:
             container_has_rjump_pops = True
-        # Pushes to the stack never affect the zeroth section, because it `STOP`s and not `RETF`s.
+        # Pushes to the stack never affect the zeroth section, because it
+        # `STOP`s and not `RETF`s.
         if rjump_snippet_pushes and section_idx != 0:
             container_has_rjump_pushes = True
         if rjump_falls_off_code:
@@ -369,12 +382,13 @@ def test_rjumps_jumpf_nonreturning(
     rjump_kind: RjumpKind,
     rjump_section_idx: int,
     rjump_spot: RjumpSpot,
-):
+) -> None:
     """
-    Test EOF container validation for EIP-4200 vs EIP-6206 interactions on non-returning
-    functions.
+    Test EOF container validation for EIP-4200 vs EIP-6206 interactions on
+    non-returning functions.
     """
-    # Zeroth section has always 0 inputs and 0 outputs, so is excluded from param
+    # Zeroth section has always 0 inputs and 0 outputs, so is excluded from
+    # param
     inputs = (0,) + inputs
 
     sections = []
@@ -394,8 +408,9 @@ def test_rjumps_jumpf_nonreturning(
             call = None
             termination = Op.STOP
 
-        # `section_has_invalid_back_jump` - never happens: we excluded RJUMP from the end
-        # `rjump_snippet_pushes` - never happens: we never RETF where too large stack would fail
+        # `section_has_invalid_back_jump` - never happens: we excluded RJUMP
+        # from the end `rjump_snippet_pushes` - never happens: we never RETF
+        # where too large stack would fail
         (
             code,
             _section_has_invalid_back_jump,
@@ -440,7 +455,7 @@ def test_rjumps_jumpf_nonreturning(
     eof_test(container=Container(sections=sections), expect_exception=possible_exceptions or None)
 
 
-def gen_stack_underflow_params():
+def gen_stack_underflow_params() -> Generator[tuple[Union[Op, Opcode], int], None, None]:
     """Generate parameters for stack underflow tests."""
     opcodes = sorted(op for op in valid_eof_opcodes if op.min_stack_height > 0) + [
         # Opcodes that have variable min_stack_height
@@ -461,10 +476,10 @@ def gen_stack_underflow_params():
 @pytest.mark.parametrize("op,stack_height", gen_stack_underflow_params())
 def test_all_opcodes_stack_underflow(
     eof_test: EOFTestFiller, op: Op, stack_height: int, spread: int
-):
+) -> None:
     """
-    Test EOF validation failing due to stack overflow
-    caused by the specific instruction `op`.
+    Test EOF validation failing due to stack overflow caused by the specific
+    instruction `op`.
     """
     code = Bytecode()
 
@@ -578,8 +593,10 @@ def test_all_opcodes_stack_underflow(
     ],
     ids=lambda x: x.name,
 )
-def test_stack_underflow_examples(eof_test, container):
-    """Test EOF validation failing due to stack underflow at basic instructions."""
+def test_stack_underflow_examples(eof_test: EOFTestFiller, container: Container) -> None:
+    """
+    Test EOF validation failing due to stack underflow at basic instructions.
+    """
     eof_test(container=container, expect_exception=EOFException.STACK_UNDERFLOW)
 
 
@@ -588,7 +605,7 @@ def test_stack_underflow_examples(eof_test, container):
 @pytest.mark.parametrize("calldata_2", [0, 1])
 def test_valid_non_constant_stack_examples(
     eof_state_test: EOFStateTestFiller, initial_stack: int, calldata_1: int, calldata_2: int
-):
+) -> None:
     """Test valid containers with non constant stack items."""
     # Stores the number of added items to the stack in storage slot 0
     # calldata_1 == 1: number of items = 2
@@ -629,7 +646,7 @@ def test_valid_non_constant_stack_examples(
 
 
 @pytest.mark.parametrize("num_rjumpi", [MAX_STACK_INCREASE_LIMIT, MAX_STACK_INCREASE_LIMIT + 1])
-def test_stack_range_maximally_broad(eof_test, num_rjumpi: int):
+def test_stack_range_maximally_broad(eof_test: EOFTestFiller, num_rjumpi: int) -> None:
     """Test stack range 0-1023 at final instruction."""
     code = Op.STOP()
     for i in range(0, num_rjumpi):

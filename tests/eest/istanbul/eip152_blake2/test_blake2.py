@@ -1,6 +1,5 @@
 """
-abstract: Tests [EIP-152: BLAKE2b compression precompile](https://eips.ethereum.org/EIPS/eip-152)
-    Test cases for [EIP-152: BLAKE2b compression precompile](https://eips.ethereum.org/EIPS/eip-152).
+Tests [EIP-152: BLAKE2b compression precompile](https://eips.ethereum.org/EIPS/eip-152).
 """
 
 from typing import List
@@ -16,7 +15,7 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 from .common import Blake2bInput, ExpectedOutput
 from .spec import SpecTestVectors, ref_spec_152
@@ -390,6 +389,7 @@ pytestmark = pytest.mark.ported_from(
         ),
     ],
 )
+@pytest.mark.slow()
 def test_blake2b(
     state_test: StateTestFiller,
     pre: Alloc,
@@ -397,7 +397,7 @@ def test_blake2b(
     blake2b_contract_bytecode: Bytecode,
     data: Blake2bInput | str | bytes,
     output: ExpectedOutput,
-):
+) -> None:
     """Test BLAKE2b precompile."""
     env = Environment()
 
@@ -514,7 +514,7 @@ def test_blake2b_invalid_gas(
     gas_limit: int,
     data: Blake2bInput | str | bytes,
     output: ExpectedOutput,
-):
+) -> None:
     """Test BLAKE2b precompile invalid calls using different gas limits."""
     env = Environment()
 
@@ -636,7 +636,7 @@ def test_blake2b_gas_limit(
     gas_limit: int,
     data: Blake2bInput | str | bytes,
     output: ExpectedOutput,
-):
+) -> None:
     """Test BLAKE2b precompile with different gas limits."""
     account = pre.deploy_contract(blake2b_contract_bytecode, storage={0: 0xDEADBEEF})
     sender = pre.fund_eoa()
@@ -763,7 +763,7 @@ def test_blake2b_large_gas_limit(
     blake2b_contract_bytecode: Bytecode,
     data: Blake2bInput | str | bytes,
     output: ExpectedOutput,
-):
+) -> None:
     """Test BLAKE2b precompile with large gas limit."""
     account = pre.deploy_contract(blake2b_contract_bytecode, storage={0: 0xDEADBEEF})
     sender = pre.fund_eoa()

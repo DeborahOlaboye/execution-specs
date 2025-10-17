@@ -1,10 +1,13 @@
-"""Test ModExp gas cost transition from EIP-7883 before and after the Osaka hard fork."""
+"""
+Test ModExp gas cost transition from EIP-7883 before & after the Osaka fork.
+"""
 
 import pytest
 
+from ethereum_test_checklists import EIPChecklist
 from ethereum_test_forks import Fork
-from ethereum_test_tools import Account, Alloc, Block, BlockchainTestFiller, Transaction
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_tools import Account, Alloc, Block, BlockchainTestFiller, Transaction, keccak256
+from ethereum_test_vm import Opcodes as Op
 
 from ...byzantium.eip198_modexp_precompile.helpers import ModExpInput
 from .spec import Spec, ref_spec_7883
@@ -20,7 +23,13 @@ pytestmark = pytest.mark.valid_at_transition_to("Osaka", subsequent_forks=True)
     [
         pytest.param(Spec.modexp_input, Spec.modexp_expected, 200, 1200),
     ],
+    ids=[""],
 )
+@EIPChecklist.GasCostChanges.Test.ForkTransition.Before()
+@EIPChecklist.GasCostChanges.Test.ForkTransition.After()
+@EIPChecklist.Precompile.Test.ForkTransition.After.Warm()
+@EIPChecklist.GasCostChanges.Test.ForkTransition.Before()
+@EIPChecklist.GasCostChanges.Test.ForkTransition.After()
 def test_modexp_fork_transition(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
@@ -29,8 +38,12 @@ def test_modexp_fork_transition(
     gas_new: int,
     tx_gas_limit: int,
     modexp_input: ModExpInput,
-):
-    """Test ModExp gas cost transition from EIP-7883 before and after the Osaka hard fork."""
+    modexp_expected: bytes,
+) -> None:
+    """
+    Test ModExp gas cost transition from EIP-7883 before and after the Osaka
+    hard fork.
+    """
     call_code = Op.CALL(
         address=Spec.MODEXP_ADDRESS,
         args_size=Op.CALLDATASIZE,
@@ -39,7 +52,7 @@ def test_modexp_fork_transition(
     gas_costs = fork.gas_costs()
     extra_gas = (
         gas_costs.G_WARM_ACCOUNT_ACCESS
-        + (gas_costs.G_VERY_LOW * (len(Op.CALL.kwargs) - 2))  # type: ignore
+        + (gas_costs.G_VERY_LOW * (len(Op.CALL.kwargs) - 2))
         + (gas_costs.G_BASE * 3)
     )
     code = (
@@ -55,6 +68,12 @@ def test_modexp_fork_transition(
         + Op.SUB  # [gas_start - (gas_end + extra_gas)]
         + Op.TIMESTAMP  # [gas_start - (gas_end + extra_gas), TIMESTAMP]
         + Op.SSTORE  # []
+    )
+
+    # Verification the precompile call result
+    code += Op.RETURNDATACOPY(dest_offset=0, offset=0, size=Op.RETURNDATASIZE()) + Op.SSTORE(
+        Op.AND(Op.TIMESTAMP, 0xFF),
+        Op.SHA3(0, Op.RETURNDATASIZE()),
     )
 
     senders = [pre.fund_eoa() for _ in range(3)]
@@ -78,7 +97,7 @@ def test_modexp_fork_transition(
     ]
 
     post = {
-        contract: Account(storage={ts: gas})
+        contract: Account(storage={ts: gas, ts & 0xFF: keccak256(bytes(modexp_expected))})
         for contract, ts, gas in zip(contracts, timestamps, gas_values, strict=False)
     }
 

@@ -1,8 +1,6 @@
 """
-abstract: Tests [EIP-7251: Increase the MAX_EFFECTIVE_BALANCE](https://eips.ethereum.org/EIPS/eip-7251)
-    Test execution layer triggered consolidations [EIP-7251: Increase the MAX_EFFECTIVE_BALANCE](https://eips.ethereum.org/EIPS/eip-7251).
-
-"""  # noqa: E501
+Tests [EIP-7251: Increase the MAX_EFFECTIVE_BALANCE](https://eips.ethereum.org/EIPS/eip-7251).
+"""
 
 from typing import List
 
@@ -663,7 +661,7 @@ def test_consolidation_requests(
     blockchain_test: BlockchainTestFiller,
     blocks: List[Block],
     pre: Alloc,
-):
+) -> None:
     """Test making a consolidation request to the beacon chain."""
     blockchain_test(
         genesis_environment=Environment(),
@@ -864,10 +862,10 @@ def test_consolidation_requests_negative(
     requests: List[ConsolidationRequestInteractionBase],
     block_body_override_requests: List[ConsolidationRequest],
     exception: BlockException,
-):
+) -> None:
     """
-    Test blocks where the requests list and the actual consolidation requests that happened in the
-    block's transactions do not match.
+    Test blocks where the requests list and the actual consolidation requests
+    that happened in the block's transactions do not match.
     """
     for d in requests:
         d.update_pre(pre)

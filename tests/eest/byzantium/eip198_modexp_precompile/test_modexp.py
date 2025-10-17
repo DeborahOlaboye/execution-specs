@@ -1,7 +1,8 @@
 """
-abstract: Test [EIP-198: MODEXP Precompile](https://eips.ethereum.org/EIPS/eip-198)
-    Tests the MODEXP precompile, located at address 0x0000..0005. Test cases from the EIP are
-    labelled with `EIP-198-caseX` in the test id.
+Test [EIP-198: MODEXP Precompile](https://eips.ethereum.org/EIPS/eip-198).
+
+Tests the MODEXP precompile, located at address 0x0000..0005. Test cases
+from the EIP are labelled with `EIP-198-caseX` in the test id.
 """
 
 import pytest
@@ -15,7 +16,7 @@ from ethereum_test_tools import (
     Transaction,
     compute_create_address,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 from .helpers import ModExpInput, ModExpOutput
 
@@ -71,6 +72,16 @@ REFERENCE_SPEC_VERSION = "5c8f066acb210c704ef80c1033a941aa5374aac5"
             ModExpInput(base="", exponent="", modulus="0001"),
             ModExpOutput(returned_data="0x0000"),
         ),
+        (
+            ModExpInput(
+                base="",
+                exponent="",
+                modulus="",
+                declared_exponent_length=2**32,
+                declared_modulus_length=1,
+            ),
+            ModExpOutput(returned_data="0x00", call_success=False),
+        ),
         # Test cases from EIP 198.
         pytest.param(
             ModExpInput(
@@ -94,7 +105,8 @@ REFERENCE_SPEC_VERSION = "5c8f066acb210c704ef80c1033a941aa5374aac5"
             ),
             id="EIP-198-case2",
         ),
-        pytest.param(  # Note: This is the only test case which goes out-of-gas.
+        pytest.param(  # Note: This is the only test case which goes out-of-
+            # gas.
             Bytes(
                 "0000000000000000000000000000000000000000000000000000000000000000"
                 "0000000000000000000000000000000000000000000000000000000000000020"
@@ -134,15 +146,154 @@ REFERENCE_SPEC_VERSION = "5c8f066acb210c704ef80c1033a941aa5374aac5"
             ),
             id="EIP-198-case5-raw-input",
         ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000008000000000000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-exponent-length-0x80000000-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000004000000000000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-exponent-length-0x40000000-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000002000000000000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-exponent-length-0x20000000-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000001000000000000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-exponent-length-0x10000000-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000000000000080000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-modulus-length-0x80000020-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000000000000040000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-modulus-length-0x40000020-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000000000000020000020"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-modulus-length-0x20000020-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000000000000000000040"
+                "00000000000000000000000000000000000000000000000000000000ffffffff"
+                "80"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            id="large-modulus-length-0xffffffff-out-of-gas",
+        ),
+        pytest.param(
+            Bytes(
+                "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff9"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+                "0000000000000000000000000000000000000000000000000000000000000001"
+            ),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            # FIXME
+            marks=pytest.mark.skip(
+                reason=(
+                    "EELS bug: U256 overflow in modexp pointer arithmetic "
+                    "before Osaka - see github.com/ethereum/execution-specs/issues/1465"
+                )
+            ),
+            id="max-base-length-overflow-out-of-gas",
+        ),
+        pytest.param(
+            Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa0"),
+            ModExpOutput(
+                call_success=False,
+                returned_data="0000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            # FIXME
+            marks=pytest.mark.skip(
+                reason=(
+                    "EELS bug: U256 overflow in modexp pointer arithmetic "
+                    "before Osaka - see github.com/ethereum/execution-specs/issues/1465"
+                )
+            ),
+            id="immunefi-38958-by-omik-overflow",
+        ),
     ],
-    ids=lambda param: param.__repr__(),  # only required to remove parameter names (input/output)
+    ids=lambda param: param.__repr__(),  # only required to remove parameter
+    # names (input/output)
 )
 def test_modexp(
     state_test: StateTestFiller,
     mod_exp_input: ModExpInput | Bytes,
     output: ModExpOutput,
     pre: Alloc,
-):
+) -> None:
     """Test the MODEXP precompile."""
     env = Environment()
     sender = pre.fund_eoa()
@@ -153,17 +304,18 @@ def test_modexp(
         # Store the returned CALL status (success = 1, fail = 0) into slot 0:
         + Op.SSTORE(
             0,
-            # Setup stack to CALL into ModExp with the CALLDATA and CALL into it (+ pop value)
+            # Setup stack to CALL into ModExp with the CALLDATA and CALL into
+            # it (+ pop value)
             Op.CALL(Op.GAS(), 0x05, 0, 0, Op.CALLDATASIZE(), 0, 0),
         )
-        # Store contract deployment code to deploy the returned data from ModExp as
-        # contract code (16 bytes)
+        # Store contract deployment code to deploy the returned data from
+        # ModExp as contract code (16 bytes)
         + Op.MSTORE(
             0,
             (
-                # Need to `ljust` this PUSH32 in order to ensure the code starts
-                # in memory at offset 0 (memory right-aligns stack items which are not
-                # 32 bytes)
+                # Need to `ljust` this PUSH32 in order to ensure the code
+                # starts in memory at offset 0 (memory right-aligns stack items
+                # which are not 32 bytes)
                 Op.PUSH32(
                     bytes(
                         Op.CODECOPY(0, 16, Op.SUB(Op.CODESIZE(), 16))
@@ -172,9 +324,11 @@ def test_modexp(
                 )
             ),
         )
-        # RETURNDATACOPY the returned data from ModExp into memory (offset 16 bytes)
+        # RETURNDATACOPY the returned data from ModExp into memory (offset 16
+        # bytes)
         + Op.RETURNDATACOPY(16, 0, Op.RETURNDATASIZE())
-        # CREATE contract with the deployment code + the returned data from ModExp
+        # CREATE contract with the deployment code + the returned data from
+        # ModExp
         + Op.CREATE(0, 0, Op.ADD(16, Op.RETURNDATASIZE()))
         # STOP (handy for tracing)
         + Op.STOP(),

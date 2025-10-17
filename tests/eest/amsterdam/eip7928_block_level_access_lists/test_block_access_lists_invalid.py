@@ -1,7 +1,7 @@
 """
 Test cases for invalid Block Access Lists.
 
-These tests verify that clients properly reject blocks with corrupted BALs
+These tests verify that clients properly reject blocks with corrupted BALs.
 """
 
 import pytest
@@ -51,8 +51,11 @@ REFERENCE_SPEC_VERSION = ref_spec_7928.version
 def test_bal_invalid_missing_nonce(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL is missing required nonce changes."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL is missing required nonce
+    changes.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
 
@@ -72,7 +75,7 @@ def test_bal_invalid_missing_nonce(
         blocks=[
             Block(
                 txs=[tx],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BLOCK_ACCESS_LIST,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         sender: BalAccountExpectation(
@@ -90,8 +93,10 @@ def test_bal_invalid_missing_nonce(
 def test_bal_invalid_nonce_value(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL contains incorrect nonce value."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL contains incorrect nonce value.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
 
@@ -111,7 +116,7 @@ def test_bal_invalid_nonce_value(
         blocks=[
             Block(
                 txs=[tx],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BLOCK_ACCESS_LIST,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         sender: BalAccountExpectation(
@@ -129,8 +134,11 @@ def test_bal_invalid_nonce_value(
 def test_bal_invalid_storage_value(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL contains incorrect storage values."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL contains incorrect storage
+    values.
+    """
     sender = pre.fund_eoa(amount=10**18)
 
     # Simple storage contract with canary values
@@ -155,7 +163,7 @@ def test_bal_invalid_storage_value(
         blocks=[
             Block(
                 txs=[tx],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BLOCK_ACCESS_LIST,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         contract: BalAccountExpectation(
@@ -189,8 +197,11 @@ def test_bal_invalid_storage_value(
 def test_bal_invalid_tx_order(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL has incorrect transaction ordering."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL has incorrect transaction
+    ordering.
+    """
     sender1 = pre.fund_eoa(amount=10**18)
     sender2 = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
@@ -219,7 +230,7 @@ def test_bal_invalid_tx_order(
         blocks=[
             Block(
                 txs=[tx1, tx2],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BLOCK_ACCESS_LIST,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         sender1: BalAccountExpectation(
@@ -246,8 +257,11 @@ def test_bal_invalid_tx_order(
 def test_bal_invalid_account(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL contains accounts that don't exist."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL contains accounts that don't
+    exist.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
     phantom = pre.fund_eoa(amount=0)
@@ -269,7 +283,7 @@ def test_bal_invalid_account(
         blocks=[
             Block(
                 txs=[tx],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BAL_EXTRA_ACCOUNT,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         sender: BalAccountExpectation(
@@ -294,8 +308,11 @@ def test_bal_invalid_account(
 def test_bal_invalid_duplicate_account(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL contains duplicate account entries."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL contains duplicate account
+    entries.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
 
@@ -336,8 +353,10 @@ def test_bal_invalid_duplicate_account(
 def test_bal_invalid_account_order(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL has incorrect account ordering."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL has incorrect account ordering.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
 
@@ -378,7 +397,7 @@ def test_bal_invalid_account_order(
 def test_bal_invalid_complex_corruption(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Test complex BAL corruption with multiple transformations."""
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
@@ -412,7 +431,7 @@ def test_bal_invalid_complex_corruption(
         blocks=[
             Block(
                 txs=[tx1, tx2],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BLOCK_ACCESS_LIST,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         sender: BalAccountExpectation(
@@ -453,8 +472,10 @@ def test_bal_invalid_complex_corruption(
 def test_bal_invalid_missing_account(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL is missing an entire account."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL is missing an entire account.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
 
@@ -474,7 +495,7 @@ def test_bal_invalid_missing_account(
         blocks=[
             Block(
                 txs=[tx],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BAL_MISSING_ACCOUNT,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         sender: BalAccountExpectation(
@@ -495,8 +516,10 @@ def test_bal_invalid_missing_account(
 def test_bal_invalid_balance_value(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
-):
-    """Test that clients reject blocks where BAL contains incorrect balance value."""
+) -> None:
+    """
+    Test that clients reject blocks where BAL contains incorrect balance value.
+    """
     sender = pre.fund_eoa(amount=10**18)
     receiver = pre.fund_eoa(amount=0)
 
@@ -516,7 +539,7 @@ def test_bal_invalid_balance_value(
         blocks=[
             Block(
                 txs=[tx],
-                exception=BlockException.INCORRECT_BLOCK_FORMAT,
+                exception=BlockException.INVALID_BLOCK_ACCESS_LIST,
                 expected_block_access_list=BlockAccessListExpectation(
                     account_expectations={
                         receiver: BalAccountExpectation(

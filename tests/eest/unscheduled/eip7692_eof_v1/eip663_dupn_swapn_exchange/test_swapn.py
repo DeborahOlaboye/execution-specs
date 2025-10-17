@@ -1,7 +1,4 @@
-"""
-abstract: Tests [EIP-663: SWAPN, DUPN and EXCHANGE instructions](https://eips.ethereum.org/EIPS/eip-663)
-    Tests for the SWAPN instruction.
-"""  # noqa: E501
+"""Tests [EIP-663: SWAPN, DUPN and EXCHANGE instructions](https://eips.ethereum.org/EIPS/eip-663)."""
 
 import pytest
 
@@ -15,9 +12,9 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
 from ethereum_test_types.eof.v1.constants import MAX_STACK_INCREASE_LIMIT
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from . import REFERENCE_SPEC_GIT_PATH, REFERENCE_SPEC_VERSION
@@ -28,7 +25,7 @@ REFERENCE_SPEC_VERSION = REFERENCE_SPEC_VERSION
 pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
 
-def test_swapn_all_valid_immediates(eof_state_test: EOFStateTestFiller):
+def test_swapn_all_valid_immediates(eof_state_test: EOFStateTestFiller) -> None:
     """Test case for all valid SWAPN immediates."""
     n = 256
     values = range(0x500, 0x500 + 257)
@@ -63,7 +60,7 @@ def test_swapn_all_valid_immediates(eof_state_test: EOFStateTestFiller):
 def test_swapn_on_max_stack(
     swapn_operand: int,
     eof_test: EOFTestFiller,
-):
+) -> None:
     """Test case out of bounds SWAPN (max stack)."""
     eof_code = Container(
         sections=[
@@ -91,7 +88,7 @@ def test_swapn_on_max_stack(
 def test_swapn_stack_underflow(
     stack_height: int,
     eof_test: EOFTestFiller,
-):
+) -> None:
     """Test case out of bounds SWAPN (underflow)."""
     eof_code = Container(
         sections=[
@@ -120,7 +117,7 @@ def test_swapn_simple(
     swapn_arg: int,
     pre: Alloc,
     state_test: StateTestFiller,
-):
+) -> None:
     """Test case for simple SWAPN operations."""
     sender = pre.fund_eoa()
     contract_address = pre.deploy_contract(

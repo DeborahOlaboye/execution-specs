@@ -1,10 +1,9 @@
 """
-abstract: Tests for [EIP-1153: Transient Storage](https://eips.ethereum.org/EIPS/eip-1153)
-    Test cases for `TSTORE` and `TLOAD` opcode calls in different execution contexts.
-"""  # noqa: E501
+Test EIP-1153 Transient Storage in execution contexts.
+"""
 
 from enum import EnumMeta, unique
-from typing import Dict, Mapping
+from typing import Any, Dict, Mapping
 
 import pytest
 
@@ -33,12 +32,12 @@ PUSH_OPCODE_COST = 3
 
 class DynamicCallContextTestCases(EnumMeta):
     """
-    Create dynamic transient storage test cases for contract sub-calls
-    using CALLCODE and DELEGATECALL (these opcodes share the same
-    signatures and test cases).
+    Create dynamic transient storage test cases for contract sub-calls using
+    CALLCODE and DELEGATECALL (these opcodes share the same signatures and test
+    cases).
     """
 
-    def __new__(cls, name, bases, classdict):  # noqa: D102
+    def __new__(cls, name: str, bases: tuple[type, ...], classdict: Any) -> Any:  # noqa: D102
         for call_opcode in [Op.CALLCODE, Op.DELEGATECALL]:
             contract_call = call_opcode(address=Op.CALLDATALOAD(0))
             classdict[call_opcode._name_] = {
@@ -258,14 +257,14 @@ class CallContextTestCases(PytestParameterEnum, metaclass=DynamicCallContextTest
             + Op.SSTORE(1, Op.TLOAD(0))
             + Op.STOP
         ),
-        "callee_bytecode": Op.TSTORE(0, unchecked=True)  # calling with stack underflow still fails
-        + Op.STOP,
+        # calling with stack underflow still fails
+        "callee_bytecode": Op.TSTORE(0, unchecked=True) + Op.STOP,
         "expected_caller_storage": {0: 0, 1: 420},
         "expected_callee_storage": {},
     }
     STATICCALL_CAN_CALL_TLOAD = {
-        # TODO: Not a very useful test; consider removing after implementing ethereum/tests
-        # staticcall tests
+        # TODO: Not a very useful test; consider removing after implementing
+        # ethereum/tests staticcall tests
         "pytest_id": "staticcalled_context_can_call_tload",
         "description": ("A STATICCALL callee can not use transient storage."),
         "caller_bytecode": (
@@ -274,12 +273,13 @@ class CallContextTestCases(PytestParameterEnum, metaclass=DynamicCallContextTest
             + Op.SSTORE(1, Op.TLOAD(0))
             + Op.STOP
         ),
-        "callee_bytecode": Op.TLOAD(0) + Op.STOP,  # calling tload does not cause the call to fail
+        # calling tload does not cause the call to fail
+        "callee_bytecode": Op.TLOAD(0) + Op.STOP,
         "expected_caller_storage": {0: 1, 1: 420},
         "expected_callee_storage": {},
     }
 
-    def __init__(self, value):
+    def __init__(self, value: dict[str, Any]) -> None:
         """Initialize the test case with the given value."""
         value = {
             "env": Environment(),
@@ -333,7 +333,7 @@ def test_subcall(
     pre: Alloc,
     tx: Transaction,
     post: Mapping,
-):
+) -> None:
     """
     Test transient storage with a subcall using the following opcodes.
 

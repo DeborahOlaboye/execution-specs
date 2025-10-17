@@ -4,7 +4,7 @@ import pytest
 
 from ethereum_test_forks import Byzantium, Fork
 from ethereum_test_tools import Account, Alloc, Bytecode, StateTestFiller, Transaction
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 
 @pytest.mark.ported_from(
@@ -144,7 +144,7 @@ def test_calldatacopy(
     pre: Alloc,
     code_address_storage: Account,
     to_address_storage: Account | None,
-):
+) -> None:
     """
     Test `CALLDATACOPY` opcode.
 

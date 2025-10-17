@@ -1,8 +1,6 @@
 """
-abstract: Tests [EIP-7251: Execution layer triggerable consolidation](https://eips.ethereum.org/EIPS/eip-7251)
-    Test execution layer triggered exits [EIP-7251: Execution layer triggerable consolidation](https://eips.ethereum.org/EIPS/eip-7251).
-
-"""  # noqa: E501
+Tests [EIP-7251: Execution layer triggerable consolidation](https://eips.ethereum.org/EIPS/eip-7251).
+"""
 
 from typing import List
 
@@ -90,8 +88,10 @@ def test_extra_consolidations(
     blockchain_test: BlockchainTestFiller,
     pre: Alloc,
     requests_list: List[ConsolidationRequest],
-):
-    """Test how clients were to behave with more than 2 consolidations per block."""
+) -> None:
+    """
+    Test how clients were to behave with more than 2 consolidations per block.
+    """
     modified_code: Bytecode = Bytecode()
     memory_offset: int = 0
     amount_of_requests: int = 0
@@ -116,7 +116,8 @@ def test_extra_consolidations(
         balance=0,
     )
 
-    # given a list of consolidation requests construct a consolidation request transaction
+    # given a list of consolidation requests construct a consolidation request
+    # transaction
     consolidation_request_transaction = ConsolidationRequestTransaction(requests=requests_list)
     # prepare consolidation senders
     consolidation_request_transaction.update_pre(pre=pre)
@@ -139,13 +140,13 @@ def test_extra_consolidations(
     "system_contract", [Address(Spec_EIP7251.CONSOLIDATION_REQUEST_PREDEPLOY_ADDRESS)]
 )
 @pytest.mark.pre_alloc_group("separate", reason="Deploys custom consolidation contract bytecode")
-@generate_system_contract_error_test(
+@generate_system_contract_error_test(  # type: ignore[arg-type]
     max_gas_limit=Spec_EIP7251.SYSTEM_CALL_GAS_LIMIT,
 )
-def test_system_contract_errors():
+def test_system_contract_errors() -> None:
     """
-    Test system contract raising different errors when called by the system account at the
-    end of the block execution.
+    Test system contract raising different errors when called by the system
+    account at the end of the block execution.
 
     To see the list of generated tests, please refer to the
     `generate_system_contract_error_test` decorator definition.

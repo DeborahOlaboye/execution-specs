@@ -1,7 +1,9 @@
 """
-abstract: Tests BLS12_G1MSM precompile of [EIP-2537: Precompile for BLS12-381 curve operations](https://eips.ethereum.org/EIPS/eip-2537)
-    Tests BLS12_G1MSM precompile of [EIP-2537: Precompile for BLS12-381 curve operations](https://eips.ethereum.org/EIPS/eip-2537).
-"""  # noqa: E501
+Test the BLS12_G1MSM precompile.
+
+Test the BLS12_G1MSM precompile introduced in
+[EIP-2537: Precompile for BLS12-381 curve operations](https://eips.ethereum.org/EIPS/eip-2537).
+"""
 
 import pytest
 
@@ -69,7 +71,8 @@ pytestmark = [
             None,
             id="multiple_points_zero_scalar",
         ),
-        # Cases with maximum discount table (test vector for gas cost calculation)
+        # Cases with maximum discount table (test vector for gas cost
+        # calculation)
         pytest.param(
             (Spec.P1 + Scalar(Spec.Q)) * (len(Spec.G1MSM_DISCOUNT_TABLE) - 1),
             Spec.INF_G1,
@@ -84,12 +87,13 @@ pytestmark = [
         ),
     ],
 )
+@pytest.mark.slow()
 def test_valid(
     state_test: StateTestFiller,
     pre: Alloc,
     post: dict,
     tx: Transaction,
-):
+) -> None:
     """Test valid calls to the BLS12_G1MSM precompile."""
     state_test(
         env=Environment(),
@@ -173,7 +177,8 @@ def test_valid(
             id="scalar_too_large",
         ),
         pytest.param(
-            Spec.G1 + Scalar(1).x.to_bytes(16, byteorder="big"),  # Invalid scalar length
+            # Invalid scalar length
+            Spec.G1 + Scalar(1).x.to_bytes(16, byteorder="big"),
             id="scalar_too_short",
         ),
         pytest.param(
@@ -198,7 +203,8 @@ def test_valid(
             id="y_above_p_pos_1",
         ),
     ],
-    # Input length tests can be found in ./test_bls12_variable_length_input_contracts.py
+    # Input length tests can be found in
+    # ./test_bls12_variable_length_input_contracts.py
 )
 @pytest.mark.parametrize(
     "precompile_gas_modifier", [100_000], ids=[""]
@@ -209,7 +215,7 @@ def test_invalid(
     pre: Alloc,
     post: dict,
     tx: Transaction,
-):
+) -> None:
     """Test invalid calls to the BLS12_G1MSM precompile."""
     state_test(
         env=Environment(),
@@ -242,12 +248,13 @@ def test_invalid(
         ),
     ],
 )
+@pytest.mark.slow()
 def test_call_types(
     state_test: StateTestFiller,
     pre: Alloc,
     post: dict,
     tx: Transaction,
-):
+) -> None:
     """Test the BLS12_G1MSM precompile using different call types."""
     state_test(
         env=Environment(),

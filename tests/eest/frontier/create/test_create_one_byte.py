@@ -1,6 +1,6 @@
 """
-The test calls CREATE in a loop deploying 1-byte contracts with all possible byte values,
-records in storage the values that failed to deploy.
+The test calls CREATE in a loop deploying 1-byte contracts with all possible
+byte values, records in storage the values that failed to deploy.
 """
 
 import pytest
@@ -37,7 +37,7 @@ def test_create_one_byte(
     fork: Fork,
     pre: Alloc,
     create_opcode: Op,
-):
+) -> None:
     """Run create deploys with single bytes for each byte."""
     initcode: dict[int, Bytecode] = {}
     for byte in range(256):

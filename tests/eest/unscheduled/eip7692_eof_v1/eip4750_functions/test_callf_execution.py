@@ -33,7 +33,7 @@ pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
     "n,result",
     ((0, 1), (1, 1), (5, 120), (57, math.factorial(57)), (58, math.factorial(58) % 2**256)),
 )
-def test_callf_factorial(eof_state_test: EOFStateTestFiller, n, result):
+def test_callf_factorial(eof_state_test: EOFStateTestFiller, n: int, result: int) -> None:
     """Test factorial implementation with recursive CALLF instructions."""
     eof_state_test(
         container=Container(
@@ -72,8 +72,10 @@ def test_callf_factorial(eof_state_test: EOFStateTestFiller, n, result):
     "n,result",
     ((0, 1), (1, 1), (13, 233), (27, 196418)),
 )
-def test_callf_fibonacci(eof_state_test: EOFStateTestFiller, n, result):
-    """Test fibonacci sequence implementation with recursive CALLF instructions."""
+def test_callf_fibonacci(eof_state_test: EOFStateTestFiller, n: int, result: int) -> None:
+    """
+    Test fibonacci sequence implementation with recursive CALLF instructions.
+    """
     eof_state_test(
         container=Container(
             sections=[
@@ -186,7 +188,7 @@ def test_callf_fibonacci(eof_state_test: EOFStateTestFiller, n, result):
     ),
     ids=lambda x: x.name,
 )
-def test_callf(eof_state_test: EOFStateTestFiller, container: Container):
+def test_callf(eof_state_test: EOFStateTestFiller, container: Container) -> None:
     """Test basic usage of CALLF and RETF instructions."""
     eof_state_test(
         container=container,
@@ -364,7 +366,9 @@ def test_callf(eof_state_test: EOFStateTestFiller, container: Container):
     ),
     ids=lambda x: x.name,
 )
-def test_callf_operand_stack_size_max(eof_state_test: EOFStateTestFiller, container: Container):
+def test_callf_operand_stack_size_max(
+    eof_state_test: EOFStateTestFiller, container: Container
+) -> None:
     """Test operand stack reaching 1024 items."""
     eof_state_test(
         container=container,
@@ -432,7 +436,9 @@ def test_callf_operand_stack_size_max(eof_state_test: EOFStateTestFiller, contai
     ),
     ids=lambda x: x.name,
 )
-def test_callf_operand_stack_overflow(eof_state_test: EOFStateTestFiller, container: Container):
+def test_callf_operand_stack_overflow(
+    eof_state_test: EOFStateTestFiller, container: Container
+) -> None:
     """Test stack overflowing 1024 items in called function."""
     eof_state_test(
         container=container,
@@ -452,13 +458,16 @@ def test_callf_sneaky_stack_overflow(
     failure: bool,
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """
-    CALLF where a normal execution would not overflow, but EIP-4750 CALLF rule #3 triggers.
+    CALLF where a normal execution would not overflow, but EIP-4750 CALLF rule
+    #3 triggers.
 
     Code Section 0 - Mostly fills the stack
-    Code Section 1 - jumper to 2, so container verification passes (we want a runtime failure)
-    Code Section 2 - Could require too much stack, but doesn't as it JUMPFs to 3
+    Code Section 1 - jumper to 2, so container verification passes (we want a
+                     runtime failure)
+    Code Section 2 - Could require too much stack, but doesn't as it JUMPFs
+                     to 3
     Code Section 3 - Writes canary values
 
     The intent is to catch implementations of CALLF that don't enforce rule #3
@@ -550,19 +559,20 @@ def test_callf_max_stack(
     failure: bool,
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """
-    CALLF where a normal execution would not overflow, but EIP-4750 CALLF rule #4 triggers.
+    CALLF where a normal execution would not overflow, but EIP-4750 CALLF rule
+    #4 triggers.
 
-    Code Section 0 - calls #1 with the configured height, but we load some operands so the
-                     return stack does not overflow
-    Code Section 1 - expands stack, calls #2, THEN recursively calls itself until input is zero,
-                     and returns.
+    Code Section 0 - calls #1 with the configured height, but we load some
+                     operands so the return stack does not overflow
+    Code Section 1 - expands stack, calls #2, THEN recursively calls itself
+                     until input is zero, and returns.
     Code Section 2 - Just returns, zero inputs, zero outputs
 
-    This will catch  CALLF execution rule #3: always fail if the operand stack is full. Not
-    checking rule 3 results in a call to section 2 and not overfilling the stack (as it is just
-    RETF).
+    This will catch  CALLF execution rule #3: always fail if the operand stack
+    is full. Not checking rule 3 results in a call to section 2 and not
+    overfilling the stack (as it is just RETF).
     """
     env = Environment()
     sender = pre.fund_eoa()
@@ -625,7 +635,7 @@ def test_callf_max_stack(
 def test_callf_retf_memory_context(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Verifies CALLF and RETF don't corrupt memory."""
     env = Environment()
     storage = Storage()

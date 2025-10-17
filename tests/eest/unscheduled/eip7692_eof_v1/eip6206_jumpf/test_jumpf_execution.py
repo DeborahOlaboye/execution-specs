@@ -5,10 +5,10 @@ import pytest
 from ethereum_test_base_types import Storage
 from ethereum_test_specs import StateTestFiller
 from ethereum_test_tools import Account, Environment, EOFException, EOFStateTestFiller, Transaction
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types import Alloc
 from ethereum_test_types.eof.v1 import Container, Section
 from ethereum_test_types.eof.v1.constants import NON_RETURNING_SECTION
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from .helpers import (
@@ -26,7 +26,7 @@ pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
 def test_jumpf_forward(
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """Test JUMPF jumping forward."""
     eof_state_test(
         container=Container(
@@ -120,7 +120,7 @@ def test_jumpf_forward(
     ],
     ids=lambda container: container.name,
 )
-def test_jumpf_to_retf(eof_state_test: EOFStateTestFiller, container: Container):
+def test_jumpf_to_retf(eof_state_test: EOFStateTestFiller, container: Container) -> None:
     """Tests JUMPF to a returning section with RETF."""
     eof_state_test(
         container=container,
@@ -131,7 +131,7 @@ def test_jumpf_to_retf(eof_state_test: EOFStateTestFiller, container: Container)
 
 def test_jumpf_to_self(
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """Tests JUMPF jumping to self."""
     eof_state_test(
         container=Container(
@@ -256,7 +256,7 @@ def test_jumpf_to_self(
     ],
     ids=lambda container: container.name,
 )
-def test_jumpf_and_retf(eof_state_test: EOFStateTestFiller, container: Container):
+def test_jumpf_and_retf(eof_state_test: EOFStateTestFiller, container: Container) -> None:
     """Tests JUMPF and RETF in the same section."""
     eof_state_test(
         container=container,
@@ -266,7 +266,7 @@ def test_jumpf_and_retf(eof_state_test: EOFStateTestFiller, container: Container
 
 def test_jumpf_too_large(
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """Tests JUMPF jumping to a section outside the max section range."""
     eof_state_test(
         container=Container(
@@ -282,7 +282,7 @@ def test_jumpf_too_large(
 
 def test_jumpf_way_too_large(
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """Tests JUMPF jumping to uint64.MAX."""
     eof_state_test(
         container=Container(
@@ -298,8 +298,11 @@ def test_jumpf_way_too_large(
 
 def test_jumpf_to_nonexistent_section(
     eof_state_test: EOFStateTestFiller,
-):
-    """Tests JUMPF jumping to valid section number but where the section does not exist."""
+) -> None:
+    """
+    Tests JUMPF jumping to valid section number but where the section does not
+    exist.
+    """
     eof_state_test(
         container=Container(
             sections=[
@@ -314,7 +317,7 @@ def test_jumpf_to_nonexistent_section(
 
 def test_callf_to_non_returning_section(
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """Tests CALLF into a non-returning section."""
     eof_state_test(
         container=Container(
@@ -334,7 +337,7 @@ def test_callf_to_non_returning_section(
 
 def test_jumpf_stack_size_1024(
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """Test stack reaching 1024 items in target function of JUMPF."""
     eof_state_test(
         container=Container(
@@ -357,8 +360,10 @@ def test_jumpf_stack_size_1024(
 
 def test_jumpf_with_inputs_stack_size_1024(
     eof_state_test: EOFStateTestFiller,
-):
-    """Test stack reaching 1024 items in target function of JUMPF with inputs."""
+) -> None:
+    """
+    Test stack reaching 1024 items in target function of JUMPF with inputs.
+    """
     eof_state_test(
         container=Container(
             sections=[
@@ -380,8 +385,11 @@ def test_jumpf_with_inputs_stack_size_1024(
 
 def test_jumpf_stack_size_1024_at_push(
     eof_state_test: EOFStateTestFiller,
-):
-    """Test stack reaching 1024 items in JUMPF target function at PUSH0 instruction."""
+) -> None:
+    """
+    Test stack reaching 1024 items in JUMPF target function at PUSH0
+    instruction.
+    """
     eof_state_test(
         container=Container(
             sections=[
@@ -428,15 +436,20 @@ def test_jumpf_stack_overflow(
     stack_height: int,
     failure: bool,
     eof_state_test: EOFStateTestFiller,
-):
+) -> None:
     """
-    Test rule #2 in execution semantics, where we make sure we have enough stack to guarantee
-    safe execution (the "reserved stack rule") max possible stack will not exceed 1024. But some
-    executions may not overflow the stack, so we need to ensure the rule is checked.
+    Test rule #2 in execution semantics, where we make sure we have enough
+    stack to guarantee safe execution (the "reserved stack rule") max possible
+    stack will not exceed 1024. But some executions may not overflow the stack,
+    so we need to ensure the rule is checked.
 
     `no_overflow` - the stack does not overflow at JUMPF call, executes to end
-    `rule_overflow` - reserved stack rule triggers, but execution would not overflow if allowed
-    `execution_overflow` - execution would overflow (but still blocked by reserved stack rule)
+
+    `rule_overflow` - reserved stack rule triggers, but execution would not
+                      overflow if allowed
+
+    `execution_overflow` - execution would overflow (but still blocked by
+                           reserved stack rule)
     """
     eof_state_test(
         container=Container(
@@ -481,8 +494,11 @@ def test_jumpf_stack_overflow(
 
 def test_jumpf_with_inputs_stack_size_1024_at_push(
     eof_state_test: EOFStateTestFiller,
-):
-    """Test stack reaching 1024 items in JUMPF target function with inputs at PUSH0 instruction."""
+) -> None:
+    """
+    Test stack reaching 1024 items in JUMPF target function with inputs at
+    PUSH0 instruction.
+    """
     eof_state_test(
         container=Container(
             sections=[
@@ -519,8 +535,10 @@ def test_jumpf_with_inputs_stack_size_1024_at_push(
 
 def test_jumpf_with_inputs_stack_overflow(
     eof_state_test: EOFStateTestFiller,
-):
-    """Test stack overflowing 1024 items in JUMPF target function with inputs."""
+) -> None:
+    """
+    Test stack overflowing 1024 items in JUMPF target function with inputs.
+    """
     eof_state_test(
         container=Container(
             sections=[
@@ -625,7 +643,7 @@ def test_jumpf_with_inputs_stack_overflow(
     ],
     ids=lambda container: container.name,
 )
-def test_jumpf_infinite_loop(eof_state_test: EOFStateTestFiller, container: Container):
+def test_jumpf_infinite_loop(eof_state_test: EOFStateTestFiller, container: Container) -> None:
     """Tests JUMPF causing an infinite loop."""
     eof_state_test(
         container=container,
@@ -636,7 +654,7 @@ def test_jumpf_infinite_loop(eof_state_test: EOFStateTestFiller, container: Cont
 def test_jumpf_memory_context(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Verifies JUMPF doesn't corrupt memory."""
     env = Environment()
     storage = Storage()
@@ -672,7 +690,7 @@ def test_jumpf_memory_context(
 def test_callf_jumpf_retf_memory_context(
     state_test: StateTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Verifies CALLF, JUMPF and RETF don't corrupt memory."""
     env = Environment()
     storage = Storage()

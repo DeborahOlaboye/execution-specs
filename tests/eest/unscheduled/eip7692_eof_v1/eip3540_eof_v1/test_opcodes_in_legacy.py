@@ -48,7 +48,8 @@ eof_opcode_blocks = [
     pytest.param(Op.DATASIZE, id="DATASIZE"),
     pytest.param(Op.DATACOPY(0, 0, 32), id="DATACOPY"),
     pytest.param(Op.EOFCREATE[0](0, 0, 0, 0), id="EOFCREATE"),
-    # pytest.param(Op.TXCREATE(0, 0, 0, 0, 0), id="TXCREATE"), not EOF-only anymore
+    # pytest.param(Op.TXCREATE(0, 0, 0, 0, 0), id="TXCREATE"), not EOF-only
+    # anymore
     pytest.param(Op.RETURNCODE[0], id="RETURNCODE"),
 ]
 
@@ -57,7 +58,7 @@ eof_opcode_blocks = [
     "code",
     eof_opcode_blocks,
 )
-def test_opcodes_in_legacy(state_test: StateTestFiller, pre: Alloc, code: Opcodes):
+def test_opcodes_in_legacy(state_test: StateTestFiller, pre: Alloc, code: Opcodes) -> None:
     """Test all EOF only opcodes in legacy contracts and expects failure."""
     env = Environment()
 
@@ -67,7 +68,8 @@ def test_opcodes_in_legacy(state_test: StateTestFiller, pre: Alloc, code: Opcode
     )
 
     post = {
-        # assert the canary is not over-written. If it was written then the EOF opcode was valid
+        # assert the canary is not over-written. If it was written then the EOF
+        # opcode was valid
         address_test_contract: Account(storage={slot_code_executed: value_non_execution_canary}),
     }
 
@@ -94,7 +96,7 @@ def test_opcodes_in_legacy(state_test: StateTestFiller, pre: Alloc, code: Opcode
     "code",
     eof_opcode_blocks,
 )
-def test_opcodes_in_create_tx(state_test: StateTestFiller, pre: Alloc, code: Opcodes):
+def test_opcodes_in_create_tx(state_test: StateTestFiller, pre: Alloc, code: Opcodes) -> None:
     """Test all EOF only opcodes in create tx and expects failure."""
     env = Environment()
 
@@ -138,7 +140,7 @@ def test_opcodes_in_create_operation(
     pre: Alloc,
     code: Opcodes,
     legacy_create_opcode: Opcodes,
-):
+) -> None:
     """Test opcodes in create operation."""
     env = Environment()
 
@@ -186,7 +188,7 @@ def test_opcodes_in_eof_calling_legacy(
     pre: Alloc,
     code: Opcodes,
     ext_call_opcode: Op,
-):
+) -> None:
     """Test all opcodes in eof calling legacy and expects failure."""
     env = Environment()
 
@@ -209,7 +211,8 @@ def test_opcodes_in_eof_calling_legacy(
     )
 
     post = {
-        # assert the canary is not over-written. If it was written then the EOF opcode was valid
+        # assert the canary is not over-written. If it was written then the EOF
+        # opcode was valid
         address_test_contract: Account(storage={slot_code_executed: value_non_execution_canary}),
         address_entry_contract: Account(
             storage={

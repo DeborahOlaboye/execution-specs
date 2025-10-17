@@ -21,7 +21,7 @@ possible, to aid in defining the behavior of Ethereum clients.
 
 import sys
 
-__version__ = "2.18.0rc5.dev1"
+__version__ = "2.18.0rc5.dev2"
 
 #
 #  Ensure we can reach 1024 frames of recursion

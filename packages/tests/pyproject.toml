@@ -1,0 +1,216 @@
+[build-system]
+requires = [
+    "setuptools==78.0.2",
+    "wheel==0.45.1",
+] # the setuptools version here should match that of setuptools below in docs in optional-dependencies
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ethereum-execution-tests"
+version = "1.0.0"
+description = "Ethereum execution client test authoring framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = [ "LICENSE" ]
+keywords = ["ethereum", "testing", "blockchain"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "click>=8.1.0,<9",
+    "ethereum-hive>=0.1.0a1,<1.0.0",
+    "ethereum-execution",
+    "gitpython>=3.1.31,<4",
+    "PyJWT>=2.3.0,<3",
+    "requests>=2.31.0,<3",
+    "requests_unixsocket2>=0.4.0",
+    "colorlog>=6.7.0,<7",
+    "pytest>=8,<9",
+    "pytest-custom-report>=1.0.1,<2",
+    "pytest-html>=4.1.0,<5",
+    "pytest-metadata>=3,<4",
+    "pytest-xdist>=3.3.1,<4",
+    "coincurve>=20.0.0,<21",
+    "trie>=3.1.0,<4",
+    "semver>=3.0.1,<4",
+    "pydantic>=2.11.0,<3",
+    "rich>=13.7.0,<14",
+    "filelock>=3.15.1,<4",
+    "ethereum-types>=0.2.1,<0.3",
+    "pyyaml>=6.0.2,<7",
+    "types-pyyaml>=6.0.12.20240917,<7",
+    "pytest-json-report>=1.5.0,<2",
+    "typing-extensions>=4.12.2,<5",
+    "questionary>=2.1.0,<3",
+    "ethereum-rlp>=0.1.3,<0.2",
+    "pytest-regex>=0.2.0,<0.3",
+    "eth-abi>=5.2.0",
+    "joblib>=1.4.2",
+    "ckzg>=2.1.3,<3",
+    "tenacity>=9.0.0,<10",
+]
+
+[project.urls]
+Homepage = "https://github.com/ethereum/execution-specs"
+Documentation = "https://eest.ethereum.org"
+Repository = "https://github.com/ethereum/execution-specs"
+Issues = "https://github.com/ethereum/execution-specs/issues"
+Changelog = "https://eest.ethereum.org/main/CHANGELOG/"
+
+[project.optional-dependencies]
+test = ["pytest-cov>=4.1.0,<5"]
+lint = [
+    "ruff==0.13.2",
+    "mypy==1.17.0",
+    "types-requests>=2.31,<2.33",
+]
+docs = [
+    "cairosvg>=2.7.0,<3",
+    "codespell>=2.4.1,<3",
+    "markdown==3.8",
+    "mike>=1.1.2,<2",
+    "mkdocs>=1.4.3,<2",
+    "mkdocs-click>=0.8,<1",
+    "mkdocs-gen-files>=0.5.0,<1",
+    "mkdocs-git-authors-plugin>=0.7.1,<1",
+    "mkdocs-glightbox>=0.3.4,<1",
+    "mkdocs-literate-nav>=0.6.0,<1",
+    "mkdocs-material>=9.1.14,<10",
+    "mkdocs-material-extensions>=1.1.1,<2",
+    "mkdocstrings>=0.21.2,<1",
+    "mkdocstrings-python>=1.0.0,<2",
+    "pillow>=10.0.1,<11",
+    "pyspelling>=2.8.2,<3",
+    "lxml>=6.0.0,<7",  # needs to be >= 6.0 for pypy
+    "setuptools==78.0.2",
+]
+
+[project.scripts]
+fill = "cli.pytest_commands.fill:fill"
+phil = "cli.pytest_commands.fill:phil"
+execute = "cli.pytest_commands.execute:execute"
+attac = "cli.pytest_commands.execute:execute"
+checkfixtures = "cli.check_fixtures:check_fixtures"
+check_eip_versions = "cli.pytest_commands.check_eip_versions:check_eip_versions"
+consume = "cli.pytest_commands.consume:consume"
+protec = "cli.pytest_commands.consume:consume"
+checklist = "cli.pytest_commands.checklist:checklist"
+generate_checklist_stubs = "cli.generate_checklist_stubs:generate_checklist_stubs"
+genindex = "cli.gen_index:generate_fixtures_index_cli"
+gentest = "cli.gentest:generate"
+eofwrap = "cli.eofwrap:eof_wrap"
+pyspelling_soft_fail = "cli.tox_helpers:pyspelling"
+markdownlintcli2_soft_fail = "cli.tox_helpers:markdownlint"
+order_fixtures = "cli.order_fixtures:order_fixtures"
+evm_bytes = "cli.evm_bytes:evm_bytes"
+hasher = "cli.hasher:main"
+eest = "cli.eest.cli:eest"
+fillerconvert = "cli.fillerconvert.fillerconvert:main"
+groupstats = "cli.show_pre_alloc_group_stats:main"
+extract_config = "cli.extract_config:extract_config"
+compare_fixtures = "cli.compare_fixtures:main"
+modify_static_test_gas_limits = "cli.modify_static_test_gas_limits:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["*tests*"]
+
+[tool.pyright]
+exclude = ["tests/static/**"]
+
+[tool.setuptools.package-data]
+ethereum_test_forks = ["forks/contracts/*.bin"]
+"pytest_plugins.execute" = ["eth_config/networks.yml"]
+"pytest_plugins" = ["eels_resolutions.json"]
+"cli.eest.make" = ["templates/*.j2"]
+"cli.pytest_commands" = ["pytest_ini_files/*.ini"]
+"ethereum_test_types" = ["kzg_trusted_setup.txt"]
+
+[tool.ruff]
+line-length = 99
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # Pyflakes
+    "B",   # flake8-bugbear
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "A",   # flake8-builtins
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "C4",  # flake8-comprehensions
+    "ARG", # flake8-unused-arguments
+]
+fixable = [
+    "E", # pycodestyle errors
+    "F", # Pyflakes
+    "B", # flake8-bugbear
+    "W", # pycodestyle warnings
+    "I", # isort
+    "D", # pydocstyle
+]
+ignore = [
+    "C401", # Unnecessary generator set
+    "C408", # Unnecessary collection call
+    "D107", # Missing docstring in __init__
+    "D200", # One-line docstring should fit on one line with quotes
+    "D203", # 1 blank line required before class docstring
+    "D205", # Missing blank line after summary
+    "D212", # Multi-line docstring summary should start at the first line
+    "D401", # First line should be in imperative mood ("Do", not "Does")
+    # TODO: ethereum/execution-spec-tests#2176
+    "ARG002", # unused-method-argument
+    "ARG003", # unused-class-method-argument
+    "ARG005", # unused-lambda-argument
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001"] # TODO: ethereum/execution-spec-tests#2188
+
+[tool.mypy]
+disable_error_code = ["import-untyped"]
+mypy_path = ["src", "$MYPY_CONFIG_FILE_DIR/stubs"]
+files = ["src", "tests"]
+exclude = [
+    '^\.cache/',
+    '^\.git/',
+    '^\.pytest_cache/',
+    '^\.ruff_cache/',
+    '^\.tox/',
+    '^\.venv/',
+    '^\.vscode/',
+    '^fixtures/',
+    '^logs/',
+    '^site/',
+]
+plugins = ["pydantic.mypy"]
+
+[tool.codespell]
+skip = ".venv,__pycache__,.git,build,dist,*.pyc,*.lock"
+check-filenames = true
+ignore-words-list = "ingenuous"
+
+[tool.pytest.ini_options]
+console_output_style = "count"
+minversion = "7.0"
+python_files = [
+    "test_*.py"
+]
+testpaths = [
+    "src"
+]
+addopts = [
+    "-p", "pytester",
+    "--ignore=src/pytest_plugins/consume/test_cache.py",
+    "--ignore=src/pytest_plugins/consume/direct/",
+    "--ignore=src/pytest_plugins/consume/simulators/",
+]
+
+[tool.uv]
+required-version = ">=0.7.0"
+
+[tool.uv.sources]
+ethereum-execution = { workspace = true }

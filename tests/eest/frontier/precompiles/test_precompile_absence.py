@@ -1,4 +1,4 @@
-"""abstract: Test Calling Precompile Range (close to zero)."""
+"""Test Calling Precompile Range (close to zero)."""
 
 import pytest
 
@@ -32,8 +32,11 @@ def test_precompile_absence(
     pre: Alloc,
     fork: Fork,
     calldata_size: int,
-):
-    """Test that addresses close to zero are not precompiles unless active in the fork."""
+) -> None:
+    """
+    Test that addresses close to zero are not precompiles unless active in the
+    fork.
+    """
     active_precompiles = fork.precompiles()
     storage = Storage()
     call_code = Bytecode()

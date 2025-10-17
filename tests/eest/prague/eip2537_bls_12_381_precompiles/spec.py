@@ -54,7 +54,7 @@ class PointG1(BytesConcatenation):
         """Convert point to bytes."""
         return self.x.to_bytes(64, byteorder="big") + self.y.to_bytes(64, byteorder="big")
 
-    def __neg__(self):
+    def __neg__(self) -> "PointG1":
         """Negates the point."""
         return PointG1(self.x, Spec.P - self.y)
 
@@ -86,7 +86,7 @@ class PointG2(BytesConcatenation):
             + self.y[1].to_bytes(64, byteorder="big")
         )
 
-    def __neg__(self):
+    def __neg__(self) -> "PointG2":
         """Negates the point."""
         return PointG2(self.x, (Spec.P - self.y[0], Spec.P - self.y[1]))
 
@@ -161,7 +161,8 @@ class Spec:
     ]
     # fmt: on
 
-    # Test constants (from https://github.com/ethereum/bls12-381-tests/tree/eip-2537)
+    # Test constants from
+    # https://github.com/ethereum/bls12-381-tests/tree/eip-2537
     P1 = PointG1(  # random point in G1
         0x112B98340EEE2777CC3C14163DEA3EC97977AC3DC5C70DA32E6E87578F44912E902CCEF9EFE28D4A78B8999DFBCA9426,
         0x186B28D92356C4DFEC4B5201AD099DBDEDE3781F8998DDF929B4CD7756192185CA7B8F4EF7088F813270AC3D48868A21,
@@ -249,7 +250,10 @@ def msm_discount(group: BLS12Group, k: int) -> int:
 def msm_gas_func_gen(
     group: BLS12Group, len_per_pair: int, multiplication_cost: int
 ) -> Callable[[int], int]:
-    """Generate a function that calculates the gas cost for the G1MSM and G2MSM precompiles."""
+    """
+    Generate a function that calculates the gas cost for the G1MSM and G2MSM
+    precompiles.
+    """
 
     def msm_gas(input_length: int) -> int:
         """Calculate gas cost for the G1MSM and G2MSM precompiles."""

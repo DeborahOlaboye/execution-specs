@@ -1,4 +1,4 @@
-"""abstract: Test identity precompile output size."""
+"""Test identity precompile output size."""
 
 import pytest
 
@@ -36,8 +36,11 @@ def test_identity_precompile_returndata(
     args_size: int,
     output_size: int,
     expected_returndatasize: int,
-):
-    """Test identity precompile RETURNDATA is sized correctly based on the input size."""
+) -> None:
+    """
+    Test identity precompile RETURNDATA is sized correctly based on the input
+    size.
+    """
     env = Environment()
     storage = Storage()
 

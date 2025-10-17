@@ -1,4 +1,4 @@
-"""abstract: Test identity precompile output size."""
+"""Test identity precompile output size."""
 
 from typing import Tuple
 
@@ -117,8 +117,11 @@ def test_call_identity_precompile(
     call_succeeds: bool,
     tx_gas_limit: int,
     contract_balance: int,
-):
-    """Test identity precompile RETURNDATA is sized correctly based on the input size."""
+) -> None:
+    """
+    Test identity precompile RETURNDATA is sized correctly based on the input
+    size.
+    """
     env = Environment()
     storage = Storage()
 
@@ -190,7 +193,7 @@ def test_call_identity_precompile_large_params(
     memory_values: Tuple[int, ...],
     call_succeeds: bool,
     tx_gas_limit: int,
-):
+) -> None:
     """Test identity precompile when out of gas occurs."""
     env = Environment()
     storage = Storage()

@@ -1,8 +1,10 @@
-"""EIP-1153 Tests."""
+"""
+[EIP-1153](https://eips.ethereum.org/EIPS/eip-1153) Tests.
+"""
 
 from enum import Enum, unique
 from pprint import pprint
-from typing import List
+from typing import Any, List
 
 import pytest
 
@@ -13,8 +15,8 @@ class PytestParameterEnum(Enum):
     """
     Helper class for defining Pytest parameters used in test cases.
 
-    This class helps define enum `value`s as `pytest.param` objects that then can
-    be used to create a parametrize decorator that can be applied to tests,
+    This class helps define enum `value`s as `pytest.param` objects that then
+    can be used to create a parametrize decorator that can be applied to tests,
     for example,
 
     ```python
@@ -23,36 +25,34 @@ class PytestParameterEnum(Enum):
         pass
     ```
 
-    Classes which derive from this class must define each test case as a different enum
-    field with a dictionary as value.
+    Classes which derive from this class must define each test case as a
+    different enum field with a dictionary as value.
 
     The dictionary must contain:
-        i. A `description` key with a string value describing the test case.
-        ii. (Optional) A `pytest_marks` key with a single mark or list of pytest
-            marks to apply to the test case. For example,
+      i. A `description` key with a string value describing the test case.
+      ii. (Optional) A `pytest_marks` key with a single mark or list of pytest
+                     marks to apply to the test case. For example:
+        ```
+        pytest_marks=pytest.mark.xfail
+        ```
+        or
+        ```
+        pytest_marks=[pytest.mark.xfail, pytest.mark.skipif]
+        ```
+      iii. (Optional) An `id` key with the name of the test.
 
-            ```
-            pytest_marks=pytest.mark.xfail
-            ```
-            or
-
-            ```
-            pytest_marks=[pytest.mark.xfail, pytest.mark.skipif]
-            ```
-        iii. (Optional) An `id` key with the name of the test.
-
-        The rest of the keys in the dictionary are the parameters of the test case.
+    The rest of the keys in the dictionary are the parameters of the test case.
 
     The test case ID is set as the enum name converted to lowercase.
     """
 
-    def __init__(self, value):
+    def __init__(self, value: dict[str, Any]) -> None:
         """Initialize the enum value."""
         assert isinstance(value, dict)
         assert "description" in value
         self._value_ = value
 
-    def param(self, names: List[str]):
+    def param(self, names: List[str]) -> Any:
         """Return the `pytest.param` value for this test case."""
         value = self._value_
         if "pytest_marks" in value:
@@ -67,20 +67,24 @@ class PytestParameterEnum(Enum):
 
     @classmethod
     def special_keywords(cls) -> List[str]:
-        """Return the special dictionary keywords that are not test parameters."""
+        """
+        Return the special dictionary keywords that are not test parameters.
+        """
         return ["description", "pytest_marks", "pytest_id"]
 
     def names(self) -> List[str]:
-        """Return the names of all the parameters included in the enum value dict."""
+        """
+        Return the names of all the parameters included in the enum value dict.
+        """
         return sorted([k for k in self._value_.keys() if k not in self.special_keywords()])
 
     @property
-    def description(self):
+    def description(self) -> str:
         """Returns the description of this test case."""
         return self._value_["description"]
 
     @classmethod
-    def parametrize(cls):
+    def parametrize(cls) -> Any:
         """Return decorator to parametrize a test with this enum."""
         names = None
         for test_case_names in [test_case.names() for test_case in cls]:

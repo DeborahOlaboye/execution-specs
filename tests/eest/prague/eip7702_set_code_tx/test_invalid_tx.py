@@ -1,7 +1,9 @@
 """
-abstract: Tests invalid set-code transactions from [EIP-7702: Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702)
-    Tests invalid set-code transactions from [EIP-7702: Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702).
-"""  # noqa: E501
+Tests invalid set-code transactions from EIP-7702.
+
+Tests invalid set-code transactions from
+[EIP-7702: Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702).
+"""
 
 from enum import Enum, auto
 from typing import List, Type
@@ -61,7 +63,7 @@ class InvalidRLPMode(Enum):
 def test_empty_authorization_list(
     transaction_test: TransactionTestFiller,
     pre: Alloc,
-):
+) -> None:
     """Test sending a transaction with an empty authorization list."""
     tx = Transaction(
         gas_limit=100_000,
@@ -101,8 +103,11 @@ def test_invalid_auth_signature(
     r: int,
     s: int,
     delegate_address: Address,
-):
-    """Test sending a transaction where one of the signature elements is out of range."""
+) -> None:
+    """
+    Test sending a transaction where one of the signature elements is out of
+    range.
+    """
     tx = Transaction(
         gas_limit=100_000,
         to=0,
@@ -148,10 +153,10 @@ def test_invalid_tx_invalid_auth_chain_id(
     pre: Alloc,
     auth_chain_id: int,
     delegate_address: Address,
-):
+) -> None:
     """
-    Test sending a transaction where the chain id field of an authorization overflows the
-    maximum value.
+    Test sending a transaction where the chain id field of an authorization
+    overflows the maximum value.
     """
     authorization = AuthorizationTuple(
         address=delegate_address,
@@ -191,10 +196,10 @@ def test_invalid_tx_invalid_auth_chain_id_encoding(
     pre: Alloc,
     delegate_address: Address,
     auth_chain_id: int,
-):
+) -> None:
     """
-    Test sending a transaction where the chain id field of an authorization has an incorrect
-    encoding.
+    Test sending a transaction where the chain id field of an authorization has
+    an incorrect encoding.
     """
 
     class ModifiedAuthorizationTuple(AuthorizationTuple):
@@ -241,10 +246,10 @@ def test_invalid_tx_invalid_nonce(
     pre: Alloc,
     nonce: int,
     delegate_address: Address,
-):
+) -> None:
     """
-    Test sending a transaction where the nonce field of an authorization overflows the maximum
-    value.
+    Test sending a transaction where the nonce field of an authorization
+    overflows the maximum value.
     """
     auth_signer = pre.fund_eoa()
 
@@ -289,10 +294,10 @@ def test_invalid_tx_invalid_nonce_as_list(
     pre: Alloc,
     nonce: List[int],
     delegate_address: Address,
-):
+) -> None:
     """
-    Test sending a transaction where the nonce field of an authorization overflows the maximum
-    value.
+    Test sending a transaction where the nonce field of an authorization
+    overflows the maximum value.
     """
     auth_signer = pre.fund_eoa()
 
@@ -331,10 +336,10 @@ def test_invalid_tx_invalid_nonce_encoding(
     transaction_test: TransactionTestFiller,
     pre: Alloc,
     delegate_address: Address,
-):
+) -> None:
     """
-    Test sending a transaction where the chain id field of an authorization has an incorrect
-    encoding.
+    Test sending a transaction where the chain id field of an authorization has
+    an incorrect encoding.
     """
 
     class ModifiedAuthorizationTuple(AuthorizationTuple):
@@ -389,10 +394,10 @@ def test_invalid_tx_invalid_address(
     pre: Alloc,
     delegate_address: int,
     address_type: Type[FixedSizeBytes],
-):
+) -> None:
     """
-    Test sending a transaction where the address field of an authorization is incorrectly
-    serialized.
+    Test sending a transaction where the address field of an authorization is
+    incorrectly serialized.
     """
     auth_signer = pre.fund_eoa()
 
@@ -433,18 +438,20 @@ def test_invalid_tx_invalid_authorization_tuple_extra_element(
     pre: Alloc,
     delegate_address: Address,
     extra_element_value: int,
-):
+) -> None:
     """
-    Test sending a transaction where the authorization tuple field of the type-4 transaction
-    is serialized to contain an extra element.
+    Test sending a transaction where the authorization tuple field of the
+    type-4 transaction is serialized to contain an extra element.
     """
     auth_signer = pre.fund_eoa()
 
     class ExtraElementAuthorizationTuple(AuthorizationTuple):
-        extra_element: HexNumber  # type: ignore
+        extra_element: HexNumber
 
         def get_rlp_fields(self) -> List[str]:
-            """Append the extra field to the list of fields to be encoded in RLP."""
+            """
+            Append the extra field to the list of fields to be encoded in RLP.
+            """
             rlp_fields = super().get_rlp_fields()[:]
             rlp_fields.append("extra_element")
             return rlp_fields
@@ -494,10 +501,10 @@ def test_invalid_tx_invalid_authorization_tuple_missing_element(
     pre: Alloc,
     delegate_address: Address,
     missing_index: int,
-):
+) -> None:
     """
-    Test sending a transaction where the authorization tuple field of the type-4 transaction
-    is serialized to miss one element.
+    Test sending a transaction where the authorization tuple field of the
+    type-4 transaction is serialized to miss one element.
     """
     auth_signer = pre.fund_eoa()
 
@@ -505,7 +512,9 @@ def test_invalid_tx_invalid_authorization_tuple_missing_element(
         missing_element_index: int
 
         def get_rlp_fields(self) -> List[str]:
-            """Remove the field that is specified by the missing element index."""
+            """
+            Remove the field that is specified by the missing element index.
+            """
             rlp_fields = super().get_rlp_fields()[:]
             rlp_fields.pop(self.missing_element_index)
             return rlp_fields
@@ -543,10 +552,11 @@ def test_invalid_tx_invalid_authorization_tuple_encoded_as_bytes(
     transaction_test: TransactionTestFiller,
     pre: Alloc,
     delegate_address: Address,
-):
+) -> None:
     """
-    Test sending a transaction where the authorization tuple field of the type-4 transaction
-    is encoded in the outer element as bytes instead of a list of elements.
+    Test sending a transaction where the authorization tuple field of the
+    type-4 transaction is encoded in the outer element as bytes instead of a
+    list of elements.
     """
 
     class ModifiedTransaction(Transaction):
@@ -593,10 +603,10 @@ def test_invalid_tx_invalid_rlp_encoding(
     pre: Alloc,
     delegate_address: Address,
     invalid_rlp_mode: InvalidRLPMode,
-):
+) -> None:
     """
-    Test sending a transaction type-4 where the RLP encoding of the transaction is
-    invalid.
+    Test sending a transaction type-4 where the RLP encoding of the transaction
+    is invalid.
     """
     auth_signer = pre.fund_eoa()
 

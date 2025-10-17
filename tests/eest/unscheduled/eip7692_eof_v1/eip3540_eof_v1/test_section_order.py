@@ -34,9 +34,11 @@ class CasePosition(Enum):
 
 
 def get_expected_code_exception(
-    section_kind, section_test, test_position
+    section_kind: SectionKind, section_test: SectionTest, test_position: CasePosition
 ) -> tuple[str, EOFExceptionInstanceOrList | None]:
-    """Verification vectors with code and exception based on test combinations."""
+    """
+    Verification vectors with code and exception based on test combinations.
+    """
     match (section_kind, section_test, test_position):
         case (SectionKind.TYPE, SectionTest.MISSING, CasePosition.HEADER):
             return (
@@ -64,7 +66,8 @@ def get_expected_code_exception(
         case (SectionKind.TYPE, SectionTest.WRONG_ORDER, CasePosition.BODY):
             return (
                 "ef00010100040200010003ff00010030500000800001ef",
-                # TODO why invalid first section type? it should say that the body incorrect
+                # TODO why invalid first section type? it should say that the
+                # body incorrect
                 EOFException.INVALID_FIRST_SECTION_TYPE,
             )
         case (SectionKind.TYPE, SectionTest.WRONG_ORDER, CasePosition.BODY_AND_HEADER):
@@ -80,8 +83,8 @@ def get_expected_code_exception(
         case (SectionKind.CODE, SectionTest.MISSING, CasePosition.BODY):
             return (
                 "ef00010100040200010003ff00010000800001ef",
-                # TODO should be an exception of empty code bytes, because it can understand that
-                # last byte is data section byte
+                # TODO should be an exception of empty code bytes, because it
+                # can understand that last byte is data section byte
                 [EOFException.INVALID_SECTION_BODIES_SIZE, EOFException.UNEXPECTED_HEADER_KIND],
             )
         case (SectionKind.CODE, SectionTest.MISSING, CasePosition.BODY_AND_HEADER):
@@ -147,10 +150,10 @@ def test_section_order(
     section_kind: SectionKind,
     section_test: SectionTest,
     test_position: CasePosition,
-):
+) -> None:
     """Test sections order and it appearance in body and header."""
 
-    def calculate_skip_flag(kind, position) -> bool:
+    def calculate_skip_flag(kind: SectionKind, position: CasePosition) -> bool:
         return (
             False
             if (section_kind != kind)
@@ -162,7 +165,7 @@ def test_section_order(
             )
         )
 
-    def make_section_order(kind) -> List[Section]:
+    def make_section_order(kind: SectionKind) -> List[Section]:
         if section_test != SectionTest.WRONG_ORDER:
             return [section_type, section_code, section_data]
         if kind == SectionKind.TYPE:
@@ -228,19 +231,19 @@ def test_container_section_order(
     eof_test: EOFTestFiller,
     container_position: int,
     test_position: CasePosition,
-):
+) -> None:
     """
-    Test containers section being out of order in the header and/or body.
-    This extends and follows the convention of the test_section_order()
-    for the optional container section.
+    Test containers section being out of order in the header and/or body. This
+    extends and follows the convention of the test_section_order() for the
+    optional container section.
     """
     if container_position == 2:
         pytest.skip("Skip valid container section position")
 
     section_code = Section.Code(
         code=Op.EOFCREATE[0](0, 0, 0, 0)
-        # TODO: Migrated tests had the following infinite loop, so it is kept here
-        #       to equalize code coverage.
+        # TODO: Migrated tests had the following infinite loop, so it is kept
+        # here to equalize code coverage.
         + Op.RJUMP[0]
         + Op.STOP()
     )
@@ -262,7 +265,7 @@ def test_container_section_order(
         ),
     )
 
-    def get_expected_exception():
+    def get_expected_exception() -> EOFExceptionInstanceOrList | None:
         match container_position, test_position:
             case 2, _:
                 return None  # Valid containers section position
@@ -270,7 +273,8 @@ def test_container_section_order(
                 return EOFException.INVALID_FIRST_SECTION_TYPE
             case 1, CasePosition.BODY:  # Messes up with the code section
                 return EOFException.UNDEFINED_INSTRUCTION
-            case 3, CasePosition.BODY:  # Data section messes up with the container section
+            case 3, CasePosition.BODY:  # Data section messes up with the
+                # container section
                 return EOFException.INVALID_MAGIC
             case 0, CasePosition.HEADER | CasePosition.BODY_AND_HEADER:
                 return EOFException.MISSING_TYPE_HEADER
@@ -278,6 +282,8 @@ def test_container_section_order(
                 return EOFException.MISSING_CODE_HEADER
             case 3, CasePosition.HEADER | CasePosition.BODY_AND_HEADER:
                 return EOFException.MISSING_TERMINATOR
+            case _:
+                return None
 
     eof_test(
         container=eof_code,

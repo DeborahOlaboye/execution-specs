@@ -1,33 +1,31 @@
 """
-abstract: Tests that benchmark EVMs for worst-case stateful opcodes.
-    Tests that benchmark EVMs for worst-case stateful opcodes.
-
 Tests that benchmark EVMs for worst-case stateful opcodes.
 """
 
 import math
+from enum import auto
 
 import pytest
 
+from ethereum_test_benchmark.benchmark_code_generator import ExtCallGenerator, JumpLoopGenerator
 from ethereum_test_forks import Fork
+from ethereum_test_specs import StateTestFiller
+from ethereum_test_specs.benchmark import BenchmarkTestFiller
 from ethereum_test_tools import (
     Account,
     Address,
     Alloc,
     Block,
-    BlockchainTestFiller,
     Bytecode,
     Environment,
     Hash,
-    StateTestFiller,
     Transaction,
     While,
     compute_create2_address,
     compute_create_address,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
-
-from .helpers import code_loop_precompile_call
+from ethereum_test_types import TestPhaseManager
+from ethereum_test_vm import Opcodes as Op
 
 REFERENCE_SPEC_GIT_PATH = "TODO"
 REFERENCE_SPEC_VERSION = "TODO"
@@ -47,22 +45,25 @@ REFERENCE_SPEC_VERSION = "TODO"
     ],
 )
 def test_worst_address_state_cold(
-    blockchain_test: BlockchainTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     fork: Fork,
     opcode: Op,
     absent_accounts: bool,
     env: Environment,
     gas_benchmark_value: int,
-):
-    """Test running a block with as many stateful opcodes accessing cold accounts."""
+) -> None:
+    """
+    Test running a block with as many stateful opcodes accessing cold accounts.
+    """
     attack_gas_limit = gas_benchmark_value
 
     gas_costs = fork.gas_costs()
     intrinsic_gas_cost_calc = fork.transaction_intrinsic_cost_calculator()
-    # For calculation robustness, the calculation below ignores "glue" opcodes like  PUSH and POP.
-    # It should be considered a worst-case number of accounts, and a few of them might not be
-    # targeted before the attacking transaction runs out of gas.
+    # For calculation robustness, the calculation below ignores "glue" opcodes
+    # like  PUSH and POP. It should be considered a worst-case number of
+    # accounts, and a few of them might not be targeted before the attacking
+    # transaction runs out of gas.
     num_target_accounts = (
         attack_gas_limit - intrinsic_gas_cost_calc()
     ) // gas_costs.G_COLD_ACCOUNT_ACCESS
@@ -70,10 +71,10 @@ def test_worst_address_state_cold(
     blocks = []
     post = {}
 
-    # Setup
-    # The target addresses are going to be constructed (in the case of absent=False) and called
-    # as addr_offset + i, where i is the index of the account. This is to avoid
-    # collisions with the addresses indirectly created by the testing framework.
+    # Setup The target addresses are going to be constructed (in the case of
+    # absent=False) and called as addr_offset + i, where i is the index of the
+    # account. This is to avoid collisions with the addresses indirectly
+    # created by the testing framework.
     addr_offset = int.from_bytes(pre.fund_eoa(amount=0))
 
     if not absent_accounts:
@@ -107,11 +108,9 @@ def test_worst_address_state_cold(
     )
     blocks.append(Block(txs=[op_tx]))
 
-    blockchain_test(
-        pre=pre,
+    benchmark_test(
         post=post,
         blocks=blocks,
-        exclude_full_post_state_in_output=True,
     )
 
 
@@ -135,17 +134,15 @@ def test_worst_address_state_cold(
     ],
 )
 def test_worst_address_state_warm(
-    state_test: StateTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
-    fork: Fork,
     opcode: Op,
     absent_target: bool,
-    gas_benchmark_value: int,
-):
-    """Test running a block with as many stateful opcodes doing warm access for an account."""
-    max_code_size = fork.max_code_size()
-    attack_gas_limit = gas_benchmark_value
-
+) -> None:
+    """
+    Test running a block with as many stateful opcodes doing warm access
+    for an account.
+    """
     # Setup
     target_addr = Address(100_000)
     post = {}
@@ -155,45 +152,28 @@ def test_worst_address_state_warm(
         post[target_addr] = Account(balance=100, code=code)
 
     # Execution
-    prep = Op.MSTORE(0, target_addr)
-    jumpdest = Op.JUMPDEST
-    jump_back = Op.JUMP(len(prep))
-    iter_block = Op.POP(opcode(address=Op.MLOAD(0)))
-    max_iters_loop = (max_code_size - len(prep) - len(jumpdest) - len(jump_back)) // len(
-        iter_block
-    )
-    op_code = prep + jumpdest + sum([iter_block] * max_iters_loop) + jump_back
-    if len(op_code) > max_code_size:
-        # Must never happen, but keep it as a sanity check.
-        raise ValueError(f"Code size {len(op_code)} exceeds maximum code size {max_code_size}")
-    op_address = pre.deploy_contract(code=op_code)
-    tx = Transaction(
-        to=op_address,
-        gas_limit=attack_gas_limit,
-        sender=pre.fund_eoa(),
-    )
-
-    state_test(
-        pre=pre,
+    setup = Op.MSTORE(0, target_addr)
+    attack_block = Op.POP(opcode(address=Op.MLOAD(0)))
+    benchmark_test(
         post=post,
-        tx=tx,
+        code_generator=JumpLoopGenerator(setup=setup, attack_block=attack_block),
     )
 
 
 class StorageAction:
     """Enum for storage actions."""
 
-    READ = 1
-    WRITE_SAME_VALUE = 2
-    WRITE_NEW_VALUE = 3
+    READ = auto()
+    WRITE_SAME_VALUE = auto()
+    WRITE_NEW_VALUE = auto()
 
 
 class TransactionResult:
     """Enum for the possible transaction outcomes."""
 
-    SUCCESS = 1
-    OUT_OF_GAS = 2
-    REVERT = 3
+    SUCCESS = auto()
+    OUT_OF_GAS = auto()
+    REVERT = auto()
 
 
 @pytest.mark.parametrize(
@@ -244,7 +224,7 @@ class TransactionResult:
     ],
 )
 def test_worst_storage_access_cold(
-    blockchain_test: BlockchainTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     fork: Fork,
     storage_action: StorageAction,
@@ -252,11 +232,12 @@ def test_worst_storage_access_cold(
     env: Environment,
     gas_benchmark_value: int,
     tx_result: TransactionResult,
-):
-    """Test running a block with as many cold storage slot accesses as possible."""
+) -> None:
+    """
+    Test running a block with as many cold storage slot accesses as possible.
+    """
     gas_costs = fork.gas_costs()
     intrinsic_gas_cost_calc = fork.transaction_intrinsic_cost_calculator()
-    attack_gas_limit = gas_benchmark_value
 
     loop_cost = gas_costs.G_COLD_SLOAD  # All accesses are always cold
     if storage_action == StorageAction.WRITE_NEW_VALUE:
@@ -280,7 +261,8 @@ def test_worst_storage_access_cold(
         execution_code_body = Op.SSTORE(Op.DUP1, Op.DUP1)
         loop_cost += gas_costs.G_VERY_LOW * 2
     elif storage_action == StorageAction.WRITE_NEW_VALUE:
-        # The new value 2^256-1 is guaranteed to be different from the initial value.
+        # The new value 2^256-1 is guaranteed to be different from the initial
+        # value.
         execution_code_body = Op.SSTORE(Op.DUP2, Op.NOT(0))
         loop_cost += gas_costs.G_VERY_LOW * 3
     elif storage_action == StorageAction.READ:
@@ -305,7 +287,7 @@ def test_worst_storage_access_cold(
         )
 
     num_target_slots = (
-        attack_gas_limit - intrinsic_gas_cost_calc() - prefix_cost - suffix_cost
+        gas_benchmark_value - intrinsic_gas_cost_calc() - prefix_cost - suffix_cost
     ) // loop_cost
     if tx_result == TransactionResult.OUT_OF_GAS:
         # Add an extra slot to make it run out-of-gas
@@ -336,8 +318,9 @@ def test_worst_storage_access_cold(
             condition=Op.PUSH1(1) + Op.SWAP1 + Op.SUB + Op.DUP1 + Op.ISZERO + Op.ISZERO,
         )
 
-    # To create the contract, we apply the slots_init code to initialize the storage slots
-    # (int the case of absent_slots=False) and then copy the execution code to the contract.
+    # To create the contract, we apply the slots_init code to initialize the
+    # storage slots (int the case of absent_slots=False) and then copy the
+    # execution code to the contract.
     creation_code = (
         slots_init
         + Op.EXTCODECOPY(
@@ -362,18 +345,15 @@ def test_worst_storage_access_cold(
 
     op_tx = Transaction(
         to=contract_address,
-        gas_limit=attack_gas_limit,
+        gas_limit=gas_benchmark_value,
         sender=pre.fund_eoa(),
     )
     blocks.append(Block(txs=[op_tx]))
 
-    blockchain_test(
-        pre=pre,
-        post={},
+    benchmark_test(
         blocks=blocks,
-        exclude_full_post_state_in_output=True,
         expected_benchmark_gas_used=(
-            total_gas_used if tx_result != TransactionResult.OUT_OF_GAS else attack_gas_limit
+            total_gas_used if tx_result != TransactionResult.OUT_OF_GAS else gas_benchmark_value
         ),
     )
 
@@ -387,15 +367,16 @@ def test_worst_storage_access_cold(
     ],
 )
 def test_worst_storage_access_warm(
-    blockchain_test: BlockchainTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     storage_action: StorageAction,
-    env: Environment,
     gas_benchmark_value: int,
-):
-    """Test running a block with as many warm storage slot accesses as possible."""
-    attack_gas_limit = gas_benchmark_value
-
+    env: Environment,
+) -> None:
+    """
+    Test running a block with as many warm storage slot accesses as
+    possible.
+    """
     blocks = []
 
     # The target storage slot for the warm access is storage slot 0.
@@ -425,89 +406,62 @@ def test_worst_storage_access_warm(
         )
         + Op.RETURN(0, Op.MSIZE)
     )
-    sender_addr = pre.fund_eoa()
-    setup_tx = Transaction(
-        to=None,
-        gas_limit=env.gas_limit,
-        data=creation_code,
-        sender=sender_addr,
-    )
-    blocks.append(Block(txs=[setup_tx]))
+
+    with TestPhaseManager.setup():
+        sender_addr = pre.fund_eoa()
+        setup_tx = Transaction(
+            to=None,
+            gas_limit=env.gas_limit,
+            data=creation_code,
+            sender=sender_addr,
+        )
+        blocks.append(Block(txs=[setup_tx]))
 
     contract_address = compute_create_address(address=sender_addr, nonce=0)
 
-    op_tx = Transaction(
-        to=contract_address,
-        gas_limit=attack_gas_limit,
-        sender=pre.fund_eoa(),
-    )
-    blocks.append(Block(txs=[op_tx]))
+    with TestPhaseManager.execution():
+        op_tx = Transaction(
+            to=contract_address,
+            gas_limit=gas_benchmark_value,
+            sender=pre.fund_eoa(),
+        )
+        blocks.append(Block(txs=[op_tx]))
 
-    blockchain_test(
-        pre=pre,
-        post={},
-        blocks=blocks,
-    )
+    benchmark_test(blocks=blocks)
 
 
 def test_worst_blockhash(
-    blockchain_test: BlockchainTestFiller,
-    pre: Alloc,
-    gas_benchmark_value: int,
-):
-    """Test running a block with as many blockhash accessing oldest allowed block as possible."""
-    # Create 256 dummy blocks to fill the blockhash window.
-    blocks = [Block()] * 256
-
-    # Always ask for the oldest allowed BLOCKHASH block.
-    execution_code = Op.PUSH1(1) + While(
-        body=Op.POP(Op.BLOCKHASH(Op.DUP1)),
-    )
-    execution_code_address = pre.deploy_contract(code=execution_code)
-    op_tx = Transaction(
-        to=execution_code_address,
-        gas_limit=gas_benchmark_value,
-        sender=pre.fund_eoa(),
-    )
-    blocks.append(Block(txs=[op_tx]))
-
-    blockchain_test(
-        pre=pre,
-        post={},
-        blocks=blocks,
-    )
-
-
-def test_worst_selfbalance(
-    state_test: StateTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     fork: Fork,
     gas_benchmark_value: int,
-):
-    """Test running a block with as many SELFBALANCE opcodes as possible."""
-    max_stack_height = fork.max_stack_height()
+    tx_gas_limit_cap: int,
+) -> None:
+    """
+    Test running a block with as many blockhash accessing oldest allowed block
+    as possible.
+    """
+    # Create 256 dummy blocks to fill the blockhash window.
+    blocks = [Block()] * 256
 
-    code_sequence = Op.SELFBALANCE * max_stack_height
-    target_address = pre.deploy_contract(code=code_sequence)
-
-    calldata = Bytecode()
-    attack_block = Op.POP(Op.STATICCALL(Op.GAS, target_address, 0, 0, 0, 0))
-
-    code = code_loop_precompile_call(calldata, attack_block, fork)
-    assert len(code) <= fork.max_code_size()
-
-    code_address = pre.deploy_contract(code=code)
-
-    tx = Transaction(
-        to=code_address,
-        gas_limit=gas_benchmark_value,
-        sender=pre.fund_eoa(),
+    benchmark_test(
+        setup_blocks=blocks,
+        code_generator=ExtCallGenerator(attack_block=Op.BLOCKHASH(1)),
+        expected_benchmark_gas_used=gas_benchmark_value,
     )
 
-    state_test(
-        pre=pre,
-        post={},
-        tx=tx,
+
+@pytest.mark.parametrize("contract_balance", [0, 1])
+def test_worst_selfbalance(
+    benchmark_test: BenchmarkTestFiller,
+    contract_balance: int,
+) -> None:
+    """Test running a block with as many SELFBALANCE opcodes as possible."""
+    benchmark_test(
+        code_generator=ExtCallGenerator(
+            attack_block=Op.SELFBALANCE,
+            contract_balance=contract_balance,
+        ),
     )
 
 
@@ -520,11 +474,11 @@ def test_worst_selfbalance(
     ],
 )
 def test_worst_extcodecopy_warm(
-    state_test: StateTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     pre: Alloc,
     copied_size: int,
     gas_benchmark_value: int,
-):
+) -> None:
     """Test running a block with as many wamr EXTCODECOPY work as possible."""
     copied_contract_address = pre.deploy_contract(
         code=Op.JUMPDEST * copied_size,
@@ -544,23 +498,22 @@ def test_worst_extcodecopy_warm(
         sender=pre.fund_eoa(),
     )
 
-    state_test(
-        pre=pre,
-        post={},
-        tx=tx,
-    )
+    benchmark_test(tx=tx)
 
 
 @pytest.mark.parametrize("value_bearing", [True, False])
 def test_worst_selfdestruct_existing(
-    blockchain_test: BlockchainTestFiller,
+    benchmark_test: BenchmarkTestFiller,
     fork: Fork,
     pre: Alloc,
     value_bearing: bool,
     env: Environment,
     gas_benchmark_value: int,
-):
-    """Test running a block with as many SELFDESTRUCTs as possible for existing contracts."""
+) -> None:
+    """
+    Test running a block with as many SELFDESTRUCTs as possible for existing
+    contracts.
+    """
     attack_gas_limit = gas_benchmark_value
     fee_recipient = pre.fund_eoa(amount=1)
 
@@ -574,12 +527,14 @@ def test_worst_selfdestruct_existing(
     ) + Op.RETURN(0, Op.EXTCODESIZE(selfdestructable_contract_addr))
     initcode_address = pre.deploy_contract(code=initcode)
 
-    # Calculate the number of contracts that can be deployed with the available gas.
+    # Calculate the number of contracts that can be deployed with the available
+    # gas.
     gas_costs = fork.gas_costs()
     intrinsic_gas_cost_calc = fork.transaction_intrinsic_cost_calculator()
     loop_cost = (
         gas_costs.G_KECCAK_256  # KECCAK static cost
-        + math.ceil(85 / 32) * gas_costs.G_KECCAK_256_WORD  # KECCAK dynamic cost for CREATE2
+        + math.ceil(85 / 32) * gas_costs.G_KECCAK_256_WORD  # KECCAK dynamic
+        # cost for CREATE2
         + gas_costs.G_VERY_LOW * 3  # ~MSTOREs+ADDs
         + gas_costs.G_COLD_ACCOUNT_ACCESS  # CALL to self-destructing contract
         + gas_costs.G_SELF_DESTRUCT
@@ -598,9 +553,9 @@ def test_worst_selfdestruct_existing(
     num_contracts = (attack_gas_limit - base_costs) // loop_cost
     expected_benchmark_gas_used = num_contracts * loop_cost + base_costs
 
-    # Create a factory that deployes a new SELFDESTRUCT contract instance pre-funded depending on
-    # the value_bearing parameter. We use CREATE2 so the caller contract can easily reproduce
-    # the addresses in a loop for CALLs.
+    # Create a factory that deployes a new SELFDESTRUCT contract instance pre-
+    # funded depending on the value_bearing parameter. We use CREATE2 so the
+    # caller contract can easily reproduce the addresses in a loop for CALLs.
     factory_code = (
         Op.EXTCODECOPY(
             address=initcode_address,
@@ -621,7 +576,8 @@ def test_worst_selfdestruct_existing(
         + Op.RETURN(0, 32)
     )
 
-    required_balance = num_contracts if value_bearing else 0  # 1 wei per contract
+    required_balance = num_contracts if value_bearing else 0  # 1 wei per
+    # contract
     factory_address = pre.deploy_contract(code=factory_code, balance=required_balance)
 
     factory_caller_code = Op.CALLDATALOAD(0) + While(
@@ -648,8 +604,8 @@ def test_worst_selfdestruct_existing(
         + While(
             body=Op.POP(Op.CALL(address=Op.SHA3(32 - 20 - 1, 85)))
             + Op.MSTORE(32, Op.ADD(Op.MLOAD(32), 1)),
-            # Only loop if we have enough gas to cover another iteration plus the
-            # final storage gas.
+            # Only loop if we have enough gas to cover another iteration plus
+            # the final storage gas.
             condition=Op.GT(Op.GAS, final_storage_gas + loop_cost),
         )
         + Op.SSTORE(0, 42)  # Done for successful tx execution assertion below.
@@ -678,14 +634,12 @@ def test_worst_selfdestruct_existing(
         post[deployed_contract_address] = Account(nonce=1)
         deployed_contract_addresses.append(deployed_contract_address)
 
-    blockchain_test(
-        pre=pre,
+    benchmark_test(
         post=post,
         blocks=[
             Block(txs=[contracts_deployment_tx]),
             Block(txs=[opcode_tx], fee_recipient=fee_recipient),
         ],
-        exclude_full_post_state_in_output=True,
         expected_benchmark_gas_used=expected_benchmark_gas_used,
     )
 
@@ -698,10 +652,10 @@ def test_worst_selfdestruct_created(
     fork: Fork,
     env: Environment,
     gas_benchmark_value: int,
-):
+) -> None:
     """
-    Test running a block with as many SELFDESTRUCTs as possible for deployed contracts in
-    the same transaction.
+    Test running a block with as many SELFDESTRUCTs as possible for deployed
+    contracts in the same transaction.
     """
     fee_recipient = pre.fund_eoa(amount=1)
     env.fee_recipient = fee_recipient
@@ -779,9 +733,9 @@ def test_worst_selfdestruct_created(
         sender=pre.fund_eoa(),
     )
 
-    post = {code_addr: Account(storage={0: 42})}  # Check for successful execution.
+    post = {code_addr: Account(storage={0: 42})}  # Check for successful
+    # execution.
     state_test(
-        env=env,
         pre=pre,
         post=post,
         tx=code_tx,
@@ -797,8 +751,11 @@ def test_worst_selfdestruct_initcode(
     fork: Fork,
     env: Environment,
     gas_benchmark_value: int,
-):
-    """Test running a block with as many SELFDESTRUCTs as possible executed in initcode."""
+) -> None:
+    """
+    Test running a block with as many SELFDESTRUCTs as possible executed in
+    initcode.
+    """
     fee_recipient = pre.fund_eoa(amount=1)
     env.fee_recipient = fee_recipient
 
@@ -861,9 +818,9 @@ def test_worst_selfdestruct_initcode(
         sender=pre.fund_eoa(),
     )
 
-    post = {code_addr: Account(storage={0: 42})}  # Check for successful execution.
+    post = {code_addr: Account(storage={0: 42})}  # Check for successful
+    # execution.
     state_test(
-        env=env,
         pre=pre,
         post=post,
         tx=code_tx,

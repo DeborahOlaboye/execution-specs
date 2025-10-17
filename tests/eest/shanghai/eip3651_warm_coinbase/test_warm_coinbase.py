@@ -1,9 +1,8 @@
 """
-abstract: Tests [EIP-3651: Warm COINBASE](https://eips.ethereum.org/EIPS/eip-3651)
-    Tests for [EIP-3651: Warm COINBASE](https://eips.ethereum.org/EIPS/eip-3651).
+Tests [EIP-3651: Warm COINBASE](https://eips.ethereum.org/EIPS/eip-3651).
 
-note: Tests ported from:
-    - [ethereum/tests/pull/1082](https://github.com/ethereum/tests/pull/1082).
+Tests ported from:
+[ethereum/tests/pull/1082](https://github.com/ethereum/tests/pull/1082).
 """
 
 import pytest
@@ -19,7 +18,7 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_vm import Opcodes as Op
 
 from .spec import ref_spec_3651
 
@@ -78,7 +77,7 @@ def test_warm_coinbase_call_out_of_gas(
     contract_under_test_code: Bytecode,
     call_gas_exact: int,
     use_sufficient_gas: bool,
-):
+) -> None:
     """
     Test that the coinbase is warm by accessing the COINBASE with each
     of the following opcodes.
@@ -213,7 +212,7 @@ def test_warm_coinbase_gas_usage(
     fork: Fork,
     opcode: str,
     code_gas_measure: Bytecode,
-):
+) -> None:
     """
     Test the gas usage of opcodes affected by assuming a warm coinbase.
 

@@ -1,7 +1,6 @@
 """
-abstract: Tests [EIP-663: SWAPN, DUPN and EXCHANGE instructions](https://eips.ethereum.org/EIPS/eip-663)
-    Tests for the EXCHANGE instruction.
-"""  # noqa: E501
+Tests [EIP-663: SWAPN, DUPN and EXCHANGE instructions](https://eips.ethereum.org/EIPS/eip-663).
+"""
 
 import pytest
 
@@ -15,8 +14,8 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from . import REFERENCE_SPEC_GIT_PATH, REFERENCE_SPEC_VERSION
@@ -27,7 +26,7 @@ REFERENCE_SPEC_VERSION = REFERENCE_SPEC_VERSION
 pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
 
-def test_exchange_all_valid_immediates(eof_state_test: EOFStateTestFiller):
+def test_exchange_all_valid_immediates(eof_state_test: EOFStateTestFiller) -> None:
     """Test case for all valid EXCHANGE immediates."""
     n = 256
     s = 34
@@ -80,7 +79,7 @@ def test_exchange_stack_underflow(
     stack_height: int,
     x: int,
     y: int,
-):
+) -> None:
     """Test case the EXCHANGE causing stack underflow."""
     eof_code = Container(
         sections=[
@@ -110,7 +109,7 @@ def test_exchange_simple(
     extra_stack: int,
     pre: Alloc,
     state_test: StateTestFiller,
-):
+) -> None:
     """Test case for simple EXCHANGE operations."""
     sender = pre.fund_eoa()
     stack_height = m_arg + n_arg + 2 + extra_stack

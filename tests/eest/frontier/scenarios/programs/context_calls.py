@@ -4,7 +4,8 @@ from functools import cached_property
 
 from ethereum_test_forks import Byzantium, Cancun, Constantinople, Fork, Istanbul, London, Shanghai
 from ethereum_test_tools import Alloc, Bytecode
-from ethereum_test_tools.vm.opcode import Opcodes as Op
+from ethereum_test_types import ChainConfigDefaults
+from ethereum_test_vm import Opcodes as Op
 
 from ..common import (
     ProgramResult,
@@ -15,10 +16,13 @@ from ..common import (
 
 
 class ProgramAddress(ScenarioTestProgram):
-    """Check that ADDRESS is really the code execution address in all scenarios."""
+    """
+    Check that ADDRESS is really the code execution address in all scenarios.
+    """
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.ADDRESS) + Op.RETURN(0, 32)
 
     @cached_property
@@ -38,6 +42,7 @@ class ProgramBalance(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
         external_address = pre.deploy_contract(code=Op.ADD(1, 1), balance=self.external_balance)
         return Op.MSTORE(0, Op.BALANCE(external_address)) + Op.RETURN(0, 32)
 
@@ -56,6 +61,7 @@ class ProgramOrigin(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.ORIGIN) + Op.RETURN(0, 32)
 
     @cached_property
@@ -73,6 +79,7 @@ class ProgramCaller(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.CALLER) + Op.RETURN(0, 32)
 
     @cached_property
@@ -90,6 +97,7 @@ class ProgramCallValue(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.CALLVALUE) + Op.RETURN(0, 32)
 
     @cached_property
@@ -107,6 +115,7 @@ class ProgramCallDataLoad(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.CALLDATALOAD(0)) + Op.RETURN(0, 32)
 
     @cached_property
@@ -124,6 +133,7 @@ class ProgramCallDataSize(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.CALLDATASIZE) + Op.RETURN(0, 32)
 
     @cached_property
@@ -141,6 +151,7 @@ class ProgramCallDataCopy(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.CALLDATACOPY(0, 0, Op.CALLDATASIZE) + Op.RETURN(0, 32)
 
     @cached_property
@@ -158,6 +169,7 @@ class ProgramCodeCopyCodeSize(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.CODESIZE) + Op.CODECOPY(0, 0, 30) + Op.RETURN(0, 32)
 
     @cached_property
@@ -177,6 +189,7 @@ class ProgramGasPrice(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
         gas_hash = make_gas_hash_contract(pre)
 
         return (
@@ -203,6 +216,8 @@ class ProgramExtCodeCopyExtCodeSize(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         external_address = pre.deploy_contract(code=Op.ADD(1, 1), balance=self.external_balance)
         return (
             Op.MSTORE(0, Op.EXTCODESIZE(external_address))
@@ -227,6 +242,7 @@ class ProgramReturnDataSize(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return (
             Op.MSTORE(0, Op.RETURNDATASIZE)
             + Op.CALL(100000, 2, 0, 0, 10, 32, 20)
@@ -249,6 +265,7 @@ class ProgramReturnDataCopy(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return (
             Op.CALL(100000, 2, 0, 0, 10, 32, 20) + Op.RETURNDATACOPY(0, 0, 32) + Op.RETURN(0, 32)
         )
@@ -271,6 +288,8 @@ class ProgramExtCodehash(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         external_address = pre.deploy_contract(code=Op.ADD(1, 1), balance=123)
         return Op.MSTORE(0, Op.EXTCODEHASH(external_address)) + Op.RETURN(0, 32)
 
@@ -294,6 +313,8 @@ class ProgramBlockhash(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         # Calculate gas hash of Op.BLOCKHASH(0) value
         gas_hash = make_gas_hash_contract(pre)
 
@@ -319,6 +340,7 @@ class ProgramCoinbase(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.COINBASE) + Op.RETURN(0, 32)
 
     @cached_property
@@ -336,6 +358,8 @@ class ProgramTimestamp(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         gas_hash = make_gas_hash_contract(pre)
         return (
             Op.MSTORE(64, Op.TIMESTAMP)
@@ -359,6 +383,7 @@ class ProgramNumber(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.NUMBER) + Op.RETURN(0, 32)
 
     @cached_property
@@ -376,6 +401,8 @@ class ProgramDifficultyRandao(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         # Calculate gas hash of DIFFICULTY value
         gas_hash = make_gas_hash_contract(pre)
         return (
@@ -401,6 +428,7 @@ class ProgramGasLimit(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.GASLIMIT) + Op.RETURN(0, 32)
 
     @cached_property
@@ -418,6 +446,7 @@ class ProgramChainid(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.CHAINID) + Op.RETURN(0, 32)
 
     @cached_property
@@ -427,7 +456,10 @@ class ProgramChainid(ScenarioTestProgram):
 
     def result(self) -> ProgramResult:
         """Test result."""
-        return ProgramResult(result=1, from_fork=Istanbul)
+        # TODO: use `chain_config` fixture instead.
+        chain_id = ChainConfigDefaults.chain_id
+
+        return ProgramResult(result=chain_id, from_fork=Istanbul)
 
 
 class ProgramSelfbalance(ScenarioTestProgram):
@@ -435,6 +467,7 @@ class ProgramSelfbalance(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.SELFBALANCE) + Op.RETURN(0, 32)
 
     @cached_property
@@ -452,6 +485,8 @@ class ProgramBasefee(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         gas_hash = make_gas_hash_contract(pre)
         return (
             Op.MSTORE(64, Op.BASEFEE)
@@ -475,6 +510,7 @@ class ProgramBlobhash(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.BLOBHASH(0)) + Op.RETURN(0, 32)
 
     @cached_property
@@ -492,6 +528,8 @@ class ProgramBlobBaseFee(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del fork
+
         gas_hash = make_gas_hash_contract(pre)
         return (
             Op.MSTORE(64, Op.BLOBBASEFEE)
@@ -515,6 +553,7 @@ class ProgramTload(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.MSTORE(0, Op.TLOAD(0)) + Op.RETURN(0, 32)
 
     @cached_property
@@ -532,6 +571,7 @@ class ProgramMcopy(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return (
             Op.MSTORE(0, 0)
             + Op.MSTORE(32, 0x000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F)
@@ -557,6 +597,7 @@ class ProgramPush0(ScenarioTestProgram):
 
     def make_test_code(self, pre: Alloc, fork: Fork) -> Bytecode:
         """Test code."""
+        del pre, fork
         return Op.PUSH1(10) + Op.PUSH0 + Op.MSTORE + Op.RETURN(0, 32)
 
     @cached_property

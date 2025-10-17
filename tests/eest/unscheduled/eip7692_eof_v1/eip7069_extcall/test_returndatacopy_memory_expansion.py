@@ -52,7 +52,10 @@ def subcall_exact_cost(
     dest: int,
     length: int,
 ) -> int:
-    """Return exact cost of the subcall, based on the initial memory and the length of the copy."""
+    """
+    Return exact cost of the subcall, based on the initial memory and the
+    length of the copy.
+    """
     cost_memory_bytes = fork.memory_expansion_gas_calculator()
 
     returndatacopy_cost = 3
@@ -78,8 +81,9 @@ def bytecode_storage(
     memory_expansion_address: Address,
 ) -> Tuple[Bytecode, Storage.StorageDictType]:
     """
-    Prepare bytecode and storage for the test, based on the expected result of the subcall
-    (whether it succeeds or fails depending on the length of the memory expansion).
+    Prepare bytecode and storage for the test, based on the expected result of
+    the subcall (whether it succeeds or fails depending on the length of the
+    memory expansion).
     """
     bytecode = Bytecode()
     storage = {}
@@ -212,8 +216,11 @@ def test_returndatacopy_memory_expansion(
     pre: Alloc,
     post: Mapping[str, Account],
     tx: Transaction,
-):
-    """Perform RETURNDATACOPY operations that expand the memory, and verify the gas it costs."""
+) -> None:
+    """
+    Perform RETURNDATACOPY operations that expand the memory, and verify the
+    gas it costs.
+    """
     state_test(
         env=env,
         pre=pre,
@@ -264,10 +271,10 @@ def test_returndatacopy_huge_memory_expansion(
     pre: Mapping[str, Account],
     post: Mapping[str, Account],
     tx: Transaction,
-):
+) -> None:
     """
-    Perform RETURNDATACOPY operations that expand the memory by huge amounts, and verify that it
-    correctly runs out of gas.
+    Perform RETURNDATACOPY operations that expand the memory by huge amounts,
+    and verify that it correctly runs out of gas.
     """
     state_test(
         env=env,

@@ -1,15 +1,16 @@
 """
-abstract: Tests [EIP-7069: Revamped CALL instructions](https://eips.ethereum.org/EIPS/eip-7069)
-    Tests for the RETURNDATALOAD instruction.
-"""  # noqa: E501
+RETURNDATALOAD instruction tests
+    Tests for RETURNDATALOAD instruction in
+    [EIP-7069: Revamped CALL instructions](https://eips.ethereum.org/EIPS/eip-7069).
+"""
 
 from typing import cast
 
 import pytest
 
 from ethereum_test_tools import Account, Alloc, Environment, StateTestFiller, Storage, Transaction
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from . import REFERENCE_SPEC_GIT_PATH, REFERENCE_SPEC_VERSION
@@ -80,16 +81,18 @@ def test_returndatacopy_handling(
     return_data: bytes,
     offset: int,
     size: int,
-):
+) -> None:
     """
-    Tests ReturnDataLoad including multiple offset conditions and differing legacy vs. eof
-    boundary conditions.
+    Tests ReturnDataLoad including multiple offset conditions and differing
+    legacy vs. eof boundary conditions.
 
     entrypoint creates a "0xff" test area of memory, delegate calls to caller.
-    Caller is either EOF or legacy, as per parameter.  Calls returner and copies the return data
-    based on offset and size params.  Cases are expected to trigger boundary violations.
+    Caller is either EOF or legacy, as per parameter.  Calls returner and
+    copies the return data based on offset and size params.  Cases are expected
+    to trigger boundary violations.
 
-    Entrypoint copies the test area to storage slots, and the expected result is asserted.
+    Entrypoint copies the test area to storage slots, and the expected result
+    is asserted.
     """
     env = Environment()
 
@@ -213,11 +216,12 @@ def test_returndataload_handling(
     opcode: Op,
     return_data: bytes,
     offset: int,
-):
+) -> None:
     """
-    Much simpler than returndatacopy, no memory or boosted call.  Returner is called
-    and results are stored in storage slot, which is asserted for expected values.
-    The parameters offset and return data are configured to test boundary conditions.
+    Much simpler than returndatacopy, no memory or boosted call.  Returner is
+    called and results are stored in storage slot, which is asserted for
+    expected values. The parameters offset and return data are configured to
+    test boundary conditions.
     """
     env = Environment()
 
@@ -281,18 +285,19 @@ def test_returndatacopy_oob(
     state_test: StateTestFiller,
     pre: Alloc,
     opcode: Op,
-):
+) -> None:
     """
-    Extends the RETURNDATACOPY test for correct out-of-bounds behavior, by checking if the
-    caller frame's context being EOF or legacy doesn't impact the execution logic of the
-    RETURNDATACOPY instance under test.
+    Extends the RETURNDATACOPY test for correct out-of-bounds behavior, by
+    checking if the caller frame's context being EOF or legacy doesn't impact
+    the execution logic of the RETURNDATACOPY instance under test.
     """
     env = Environment()
 
     sender = pre.fund_eoa()
 
-    # Both callee codes below make an OOB (out-of-bounds) RETURNDATACOPY of one byte,
-    # which they then attempt to return (Legacy should exceptionally halt on RETURNDATACOPY).
+    # Both callee codes below make an OOB (out-of-bounds) RETURNDATACOPY of one
+    # byte, which they then attempt to return (Legacy should exceptionally halt
+    # on RETURNDATACOPY).
     address_callee_eof = pre.deploy_contract(
         code=Container(
             sections=[

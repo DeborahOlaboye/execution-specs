@@ -1,8 +1,10 @@
 """
-abstract: Tests BLS12 precompiles of [EIP-2537: Precompile for BLS12-381 curve operations](https://eips.ethereum.org/EIPS/eip-2537)
-    Tests BLS12 precompiles of [EIP-2537: Precompile for BLS12-381 curve operations](https://eips.ethereum.org/EIPS/eip-2537)
-    before the Prague hard fork is active.
-"""  # noqa: E501
+Tests BLS12 precompiles before fork activation.
+
+Tests the BLS12 precompiles behavior before fork activation from
+[EIP-2537: Precompile for BLS12-381 curve operations]
+(https://eips.ethereum.org/EIPS/eip-2537).
+"""
 
 import pytest
 
@@ -62,7 +64,7 @@ def test_precompile_before_fork(
     pre: Alloc,
     post: dict,
     tx: Transaction,
-):
+) -> None:
     """
     Test all BLS12 precompiles before the Prague hard fork is active.
 

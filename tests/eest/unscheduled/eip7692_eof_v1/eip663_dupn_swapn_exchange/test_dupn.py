@@ -1,7 +1,8 @@
 """
-abstract: Tests [EIP-663: SWAPN, DUPN and EXCHANGE instructions](https://eips.ethereum.org/EIPS/eip-663)
-    Tests for the DUPN instruction.
-"""  # noqa: E501
+DUPN instruction tests
+    Tests for DUPN instruction in
+    [EIP-663: SWAPN, DUPN and EXCHANGE instructions](https://eips.ethereum.org/EIPS/eip-663).
+"""
 
 import pytest
 
@@ -15,9 +16,9 @@ from ethereum_test_tools import (
     StateTestFiller,
     Transaction,
 )
-from ethereum_test_tools.vm.opcode import Opcodes as Op
 from ethereum_test_types.eof.v1 import Container, Section
 from ethereum_test_types.eof.v1.constants import MAX_STACK_INCREASE_LIMIT
+from ethereum_test_vm import Opcodes as Op
 
 from .. import EOF_FORK_NAME
 from . import REFERENCE_SPEC_GIT_PATH, REFERENCE_SPEC_VERSION
@@ -28,7 +29,7 @@ REFERENCE_SPEC_VERSION = REFERENCE_SPEC_VERSION
 pytestmark = pytest.mark.valid_from(EOF_FORK_NAME)
 
 
-def test_dupn_all_valid_immediates(eof_state_test: EOFStateTestFiller):
+def test_dupn_all_valid_immediates(eof_state_test: EOFStateTestFiller) -> None:
     """Test case for all valid DUPN immediates."""
     n = 2**8
     values = range(0xD00, 0xD00 + n)
@@ -67,7 +68,7 @@ def test_dupn_stack_underflow(
     stack_height: int,
     max_stack_height: int,
     eof_test: EOFTestFiller,
-):
+) -> None:
     """Test case out of bounds DUPN immediate."""
     eof_code = Container(
         sections=[
@@ -99,7 +100,7 @@ def test_dupn_stack_overflow(
     max_stack_height: int,
     expect_exception: EOFException,
     eof_test: EOFTestFiller,
-):
+) -> None:
     """Test case where DUPN produces an stack overflow."""
     eof_code = Container(
         sections=[
@@ -125,7 +126,7 @@ def test_dupn_simple(
     dupn_arg: int,
     pre: Alloc,
     state_test: StateTestFiller,
-):
+) -> None:
     """Test case for simple DUPN operations."""
     sender = pre.fund_eoa()
     contract_address = pre.deploy_contract(
